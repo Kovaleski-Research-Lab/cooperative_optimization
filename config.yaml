@@ -1,0 +1,146 @@
+#--------------------------------
+#       General Params
+#--------------------------------
+seed: [True, 1337]
+train: True
+model_id: 'early_testing'
+demo: True
+torch_home: '~/.cache/torch/'
+
+#--------------------------------
+#       Training Params
+#--------------------------------
+
+batch_size: 1
+num_epochs: 20
+accelerator: 'gpu' 
+gpu_config: [True, [0]]
+valid_rate: 1
+
+#--------------------------------
+#       All paths
+#--------------------------------
+
+paths: &id001
+  path_root: '/home/mblgh6/Documents/research/CooperativeOptimization_SPIE2024/'
+  #path_root: '/home/marshall/Documents/research/'
+  #path_root: '/Users/marshalllindsay/research/diffractive_optical_model/'
+  
+  path_data: 'data/'
+  path_train: 'train/'
+  path_valid: 'valid/'
+  path_model: 'my_models/'
+  path_results: 'results/'
+  
+  path_checkpoint: 'my_models/'
+  path_checkpoint_don: 'my_models/'
+
+#--------------------------------
+#       DON Params
+#--------------------------------
+# Model / learning
+optimizer_don: 'ADAM'
+learning_rate_don: 3.e-1
+transfer_learn_don: False
+load_checkpoint_don: False
+objective_function_don: 'mse'
+
+#--------------------------------
+#       Datamodule Params
+#--------------------------------
+#flat_calibration, MNIST
+which: 'HOLO'
+n_cpus: 20
+resize_row: 1080
+resize_col: 1080
+data_split: 'mnist_1000perClass'
+Nxp: 1080
+Nyp: 1920
+# positive is down and right
+lateral_shift_x: 0 # up and down
+lateral_shift_y: 0 # left and right
+
+#data_split: 'mnist_100perClass'
+#data_split: 'mnist_10perClass'
+#data_split: 'mnist_1perClass'
+#data_split: 'mnist_single0' #one
+#data_split: 'mnist_single1' #eight
+#data_split: 'mnist_10_1'
+#data_split: 'mnist_10_8'
+#data_split: 'mnist_100_1'
+#data_split: 'mnist_100_8'
+
+wavefront_transform:
+    phase_initialization_strategy: 0
+
+# Start of new parameters
+planes:
+  0: &idpl00
+    name: 'plane0'
+    center: [0,0,0]
+      #size: [8.96e-3, 15.36e-3]
+    size: [8.96e-3, 15.36e-3]
+    normal: [0,0,1]
+    Nx: 1080
+    Ny: 1920
+  1: &idpl01
+    name: 'plane1'
+    center: [0,0,27.e-2]
+      #size: [8.96e-3, 15.36e-3]
+    size: [8.96e-3, 15.36e-3]
+    normal: [0,0,1]
+    Nx: 1080
+    Ny: 1920
+      #2: &idpl02
+      #  name: 'plane2'
+      #  center: [0,0,434.9e-3]
+      #  size: [8.96e-3, 15.36e-3]
+      #  normal: [0,0,1]
+      #  Nx: 1080
+      #  Ny: 1920
+
+modulators:
+  0: &idm00
+    amplitude_init : 'uniform'
+    phase_init : 'random'
+    gradients : 'phase_only'
+    phase_pattern : None
+    amplitude_pattern : None
+    kwargs:
+      #1: &idm01
+      #  amplitude_init : 'uniform'
+      #  phase_init : 'custom'
+      #  gradients : 'phase_only'
+      #  phase_pattern : 'lens'
+      #  amplitude_pattern : None
+      #  kwargs:
+      #    focal_length: 90.e-3
+      #    wavelength: 1.55e-6 
+
+propagator: &idprop
+  prop_type: 'rsc'
+  wavelength: 520.e-9
+  czt: False
+
+diffraction_blocks:
+  0:
+    input_plane : *idpl00
+    output_plane : *idpl01
+    modulator_params : *idm00
+    propagator_params : *idprop
+      #1:
+      #  input_plane : *idpl01
+      #  output_plane : *idpl02
+      #  modulator_params : *idm01
+      #  propagator_params : *idprop
+
+don:
+  optimizer: 'ADAM'
+  learning_rate: 5.e-2
+  transfer_learn: False
+  load_checkpoint: False
+  objective_function: 'mse'
+
+crop_size_micron: 4500.e-6
+slm0_host: '10.10.80.1'
+  #slm1_host: '10.10.71.1'
