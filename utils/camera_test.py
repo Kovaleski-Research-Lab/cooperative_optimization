@@ -29,11 +29,13 @@ if __name__ == "__main__":
         image = camera.get_image(pil_image = False, eight_bit = False)
         if image is not None:
             im.set_data(image)
-            ax.set_title('Frame {}'.format(counter))
+            max_val = np.max(image)
+            shape = image.shape
+            ax.axvline(shape[1]//2, 0, shape[0], color='r')
+            ax.axhline(shape[0]//2, 0, shape[1], color='r')
+            ax.set_title('Frame {}, Max val {}'.format(counter, max_val))
             plt.pause(0.1)
             counter += 1
-            if counter > 10:
-                break
 
     camera.clean_up()
 

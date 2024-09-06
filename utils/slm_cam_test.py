@@ -18,6 +18,7 @@ if __name__ == "__main__":
     params = yaml.load(open('../config.yaml', 'r'), Loader=yaml.FullLoader)
     params['batch_size'] = 1
     params['which'] = 'MNIST'
+    params['paths']['path_root'] = '../'
 
     # Initialize the datamodule
     dm = datamodule.select_data(params)

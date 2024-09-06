@@ -134,8 +134,8 @@ class customDatasetMNIST(Dataset):
         if self.transform_sample is not None:
             sample = self.transform_sample(sample)
 
-        sample = sample.abs() 
-        slm_sample = (sample.abs() * 35).to(torch.uint8)
+        sample = sample.abs().to(torch.complex64)
+        slm_sample = (sample.abs() * 255).to(torch.uint8)
         target = torch.nn.functional.one_hot(torch.tensor(target), num_classes=10)
 
         return sample, slm_sample, target
@@ -164,11 +164,12 @@ class customDataset(Dataset):
         
         if self.transform_sample is not None and self.transform_target is not None:
             target = self.transform_target(target)
-            sample = self.transform_sample(self.sample)
+            sample = self.transform_sample(self.sample).to(torch.complex64)
         else:
             sample = self.sample
 
-        slm_sample = (target.abs() * 35).to(torch.uint8)
+        slm_sample = torch.abs(1-torch.abs(target))
+        slm_sample = (slm_sample * 255).to(torch.uint8)
 
         #target = torch.nn.functional.one_hot(torch.tensor(target), num_classes=10)
 
@@ -266,13 +267,12 @@ if __name__=="__main__":
     import matplotlib.pyplot as plt
     from pytorch_lightning import seed_everything
     seed_everything(1337)
-    os.environ['SLURM_JOB_ID'] = '0'
-    #plt.style.use(['science'])
 
     #Load config file   
     params = yaml.load(open('../config.yaml'), Loader = yaml.FullLoader).copy()
     params['batch_size'] = 3
     params['model_id'] = "test_0"
+    params['paths']['path_root'] = '../'
 
     dm = select_data(params)
     dm.prepare_data()

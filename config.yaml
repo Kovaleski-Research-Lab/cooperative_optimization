@@ -22,18 +22,14 @@ valid_rate: 1
 #--------------------------------
 
 paths: &id001
-  path_root: '/home/mblgh6/Documents/research/CooperativeOptimization_SPIE2024/'
-  #path_root: '/home/marshall/Documents/research/'
-  #path_root: '/Users/marshalllindsay/research/diffractive_optical_model/'
-  
+  path_root:
   path_data: 'data/'
   path_train: 'train/'
   path_valid: 'valid/'
   path_model: 'my_models/'
   path_results: 'results/'
-  
-  path_checkpoint: 'my_models/'
-  path_checkpoint_don: 'my_models/'
+  path_checkpoints: 'checkpoints/'
+  path_images: 'images/'
 
 #--------------------------------
 #       DON Params
@@ -44,12 +40,13 @@ learning_rate_don: 3.e-1
 transfer_learn_don: False
 load_checkpoint_don: False
 objective_function_don: 'mse'
+display: True
 
 #--------------------------------
 #       Datamodule Params
 #--------------------------------
 #flat_calibration, MNIST
-which: 'HOLO'
+which: 'MNIST'
 n_cpus: 20
 resize_row: 1080
 resize_col: 1080
@@ -79,15 +76,15 @@ planes:
     name: 'plane0'
     center: [0,0,0]
       #size: [8.96e-3, 15.36e-3]
-    size: [8.96e-3, 15.36e-3]
+    size: [8960.0,15360.0]
     normal: [0,0,1]
     Nx: 1080
     Ny: 1920
   1: &idpl01
     name: 'plane1'
-    center: [0,0,27.e-2]
-      #size: [8.96e-3, 15.36e-3]
-    size: [8.96e-3, 15.36e-3]
+    center: [0.0,0.0,318000]
+    size: [8960.0,15360.0]
+      #size: [5543.2e-6,9676.8e-6]
     normal: [0,0,1]
     Nx: 1080
     Ny: 1920
@@ -119,8 +116,7 @@ modulators:
 
 propagator: &idprop
   prop_type: 'rsc'
-  wavelength: 520.e-9
-  czt: False
+  wavelength: 0.520
 
 diffraction_blocks:
   0:

@@ -15,6 +15,7 @@ if __name__ == "__main__":
     params = yaml.load(open('../config.yaml', 'r'), Loader=yaml.FullLoader)
     params['batch_size'] = 1
     params['which'] = 'MNIST'
+    params['paths']['path_root'] = '../'
     
     # Initialize the datamodule
     dm = datamodule.select_data(params)
@@ -25,7 +26,7 @@ if __name__ == "__main__":
 
     # Get a sample from the train loader to get the image shape
     batch = next(iter(train_loader))
-    image = batch[0].numpy().squeeze()
+    image = batch[0].numpy().squeeze().real
     w,h = image.shape
 
     # Create a figure for displaying images
@@ -35,7 +36,7 @@ if __name__ == "__main__":
     
     # Loop through some images and display them
     for i,batch in enumerate(train_loader):
-        image = batch[0].numpy()
+        image = batch[0].numpy().real
         im.set_data(image.squeeze())
         ax.set_title('Sample {}'.format(i))
         plt.pause(0.1)

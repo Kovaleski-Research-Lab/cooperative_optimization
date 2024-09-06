@@ -1,4 +1,3 @@
-
 import os
 import yaml
 import sys
@@ -10,9 +9,15 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import CSVLogger
 
 
-import datamodule
-import models
+from src import datamodule
+from src import models
 
+
+def get_next_version(path_results,name):
+    version = 0
+    while os.path.exists(os.path.join(path_results, name, 'version_{}'.format(version))):
+        version += 1
+    return version
 
 def run(params):
     logger.info('Running the model')
@@ -21,24 +26,29 @@ def run(params):
     if params['seed'][0]:
         seed_everything(params['seed'][1], workers=True)
 
-    paths = params['paths']
-    path_root = paths['root']
-    path_results = paths['results']
-    path_results = os.path.join(path_root, path_results)
-
     alpha, beta, gamma = params['alpha'], params['beta'], params['gamma']
 
-    # Initialize the CSV logger
-    save_dir = os.path.join(path_results, 'logs')
+    # Initialize the paths
+    path_root = os.getcwd()
+    params['paths']['path_root'] = path_root
+    path_results = params['paths']['path_results']
+    path_data = params['paths']['path_data']
+    path_checkpoints = params['paths']['path_checkpoints']
+    path_images = params['paths']['path_images']
+
+    path_results = os.path.join(path_root, path_results)
+    path_data = os.path.join(path_root, path_data)
     name = 'alpha_{}_beta_{}_gamma_{}'.format(alpha, beta, gamma)
-    version = 0
-    os.makedirs(save_dir, exist_ok=True)
-    csv_logger = CSVLogger(save_dir = save_dir, 
-                           name = name, 
-                           version = version)
+    version = get_next_version(path_results, name)
+    path_images = os.path.join(path_root, path_results, name, f'version_{version}', path_images)
+    params['paths']['path_images'] = path_images
+
+    # Initialize the CSV logger
+    save_dir = os.path.join(path_results, name)
+    csv_logger = CSVLogger(save_dir = save_dir, version = 'logs', name = 'version_{}'.format(version))
 
     # Initialize the model checkpoint
-    checkpoint_dir = os.path.join(path_results, 'checkpoints', name)
+    checkpoint_dir = os.path.join(path_results, name, f'version_{version}', path_checkpoints)
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     model_checkpoint = ModelCheckpoint(
@@ -97,7 +107,7 @@ def run(params):
     trainer.fit(model, dm)
 
     # Dump the config
-    yaml.dump(params, open(os.path.join(checkpoint_dir, 'config.yaml'), 'w'))
+    yaml.dump(params, open(os.path.join(path_root, path_results,name,f'version_{version}', 'config.yaml'), 'w'))
 
 def get_alpha_beta_gamma_from_cla(argv):
     if len(argv) < 4:
@@ -110,11 +120,13 @@ def get_alpha_beta_gamma_from_cla(argv):
 
 if __name__ == "__main__":
     # Load the parameters
-    params = yaml.load(open('../config.yaml', 'r'), Loader=yaml.FullLoader)
+    params = yaml.load(open('config.yaml', 'r'), Loader=yaml.FullLoader)
     alpha, beta, gamma = get_alpha_beta_gamma_from_cla(sys.argv)
     params['alpha'] = alpha
     params['beta'] = beta
     params['gamma'] = gamma
+
+    params['paths']['path_root'] = os.getcwd()
 
     run(params)
 
