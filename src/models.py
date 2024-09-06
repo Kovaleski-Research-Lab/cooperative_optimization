@@ -7,6 +7,9 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import torch
 import pytorch_lightning as pl
+from torchmetrics import F1Score, Accuracy, Precision, Recall, ConfusionMatrix
+from torchvision.models import resnet18, resnet34, resnet50
+from torchvision.models import ResNet18_Weights, ResNet34_Weights, ResNet50_Weights
 
 
 sys.path.append('../')
@@ -17,24 +20,95 @@ from optics_benchtop import thorlabs_cc215mu
 from diffractive_optical_model import don
 
 
-class DigitalModel(pl.LightningModule):
+class Classifier(pl.LightningModule):
     def __init__(self, params):
-        self.params = params
+        super().__init__()
+
+        self.params = params['classifier']
+        self.paths = params['paths']
+        self.num_classes = params['num_classes']
+        self.architecture = params['architecture']
+        self.learning_rate = params['learning_rate']
+        self.transfer_learn = params['transfer_learn']
+        self.freeze_backbone = params['freeze_backbone']
+
+        self.select_model()
+
+        self.f1 = F1Score(task = 'multiclass', num_classes=self.num_classes)
+        self.accuracy = Accuracy(task = 'multiclass', num_classes=self.num_classes)
+        self.precision = Precision(task = 'multiclass', num_classes=self.num_classes)
+        self.recall = Recall(task = 'multiclass', num_classes=self.num_classes)
+        self.cfm = ConfusionMatrix(task = 'multiclass', num_classes=self.num_classes)
+
+        self.save_hyperparameters()
+
+    def select_model(self):
+        if self.architecture == 'resnet18':
+            if self.transfer_learn:
+                backbone = resnet18(weights = ResNet18_Weights.DEFAULT)
+            else:
+                backbone = resnet18(pretrained = False)
+        elif self.architecture == 'resnet34':
+            if self.transfer_learn:
+                backbone = resnet34(weights = ResNet34_Weights.DEFAULT)
+            else:
+                backbone = resnet34(pretrained = False)
+        elif self.architecture == 'resnet50':
+            if self.transfer_learn:
+                backbone = resnet50(weights = ResNet50_Weights.DEFAULT)
+            else:
+                backbone = resnet50(pretrained = False)
+        else:
+            raise ValueError("Architecture not supported")
+
+        if self.freeze_backbone:
+            for p in backbone.parameters():
+                p.requires_grad = False
+
+        num_filters = backbone.fc.in_features
+        layers = list(backbone.children())[:-1]
+        self.feature_extractor = torch.nn.Sequential(*layers)
+        self.classifier = torch.nn.Linear(num_filters, self.num_classes)
+
+    def calculate_metrics(self):
+
+
+
+    def objective(self, outputs, targets):
+        target = torch.nn.functional.one_hot(targets, num_classes=self.num_classes)
+        loss = torch.nn.functional.cross_entropy(outputs, targets)
+        return loss
 
     def configure_optimizers(self):
-        return torch.optim.Adam(self.parameters(), lr=self.params['lr'])
+        return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
 
     def forward(self, x):
-        pass
+        features = self.feature_extractor(x).flatten(1)
+        return self.classifier(features)
+
+    def shared_step(self, batch):
+        sample, target = batch
+        sample = torch.cat([sample, sample, sample], dim=1)
+        prediction = self.forward(sample)
+        return prediction, target
 
     def training_step(self, batch, batch_idx):
-        pass
+        outputs, targets = self.shared_step(batch)
+        loss = self.objective(outputs, targets)
+        self.log('loss_train', loss, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
+        return loss
 
     def validation_step(self, batch, batch_idx):
-        pass
+        outputs, targets = self.shared_step(batch)
+        loss = self.objective(outputs, targets)
+        self.log('loss_val', loss, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
+        return loss
 
     def test_step(self, batch, batch_idx):
-        pass
+        outputs, targets = self.shared_step(batch)
+        loss = self.objective(outputs, targets)
+        self.log('loss_test', loss, prog_bar=False, on_step=False, on_epoch=True, sync_dist=True)
+        return loss
 
 class CooperativeOpticalModel(don.DON):
     def __init__(self, params):

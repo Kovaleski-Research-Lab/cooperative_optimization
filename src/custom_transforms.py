@@ -25,11 +25,9 @@ class WavefrontTransform(object):
     def __call__(self,sample):
         c,w,h = sample.shape 
         if self.phase_initialization_strategy == 0:
-            #logger.debug("custom_transforms.py | WavefrontTransform | Phase Initialization : Phase = torch.ones(), Amplitude = Sample")
             phases = torch.ones(c,w,h)
             amplitude = sample
         else:
-            #logger.debug("custom_transforms.py | WavefrontTransform | Phase Initialization : Phase = Sample, Amplitude = torch.ones()")
             phases = sample
             amplitude = torch.ones(c,w,h)
 

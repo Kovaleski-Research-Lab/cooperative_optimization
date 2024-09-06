@@ -32,24 +32,22 @@ paths: &id001
   path_images: 'images/'
 
 #--------------------------------
-#       DON Params
+#       Classifier
 #--------------------------------
-# Model / learning
-optimizer_don: 'ADAM'
-learning_rate_don: 3.e-1
-transfer_learn_don: False
-load_checkpoint_don: False
-objective_function_don: 'mse'
-display: True
+classifier:
+  num_classes: 10
+  architecture: 'resnet18'
+  learning_rate: 1.e-3
+  transfer_learn: False
+  freeze_backbone: False
 
 #--------------------------------
 #       Datamodule Params
 #--------------------------------
-#flat_calibration, MNIST
-which: 'MNIST'
+which: 'MNIST' #MNIST
 n_cpus: 20
-resize_row: 1080
-resize_col: 1080
+resize_row: 720
+resize_col: 720
 data_split: 'mnist_1000perClass'
 Nxp: 1080
 Nyp: 1920
@@ -57,18 +55,8 @@ Nyp: 1920
 lateral_shift_x: 0 # up and down
 lateral_shift_y: 0 # left and right
 
-#data_split: 'mnist_100perClass'
-#data_split: 'mnist_10perClass'
-#data_split: 'mnist_1perClass'
-#data_split: 'mnist_single0' #one
-#data_split: 'mnist_single1' #eight
-#data_split: 'mnist_10_1'
-#data_split: 'mnist_10_8'
-#data_split: 'mnist_100_1'
-#data_split: 'mnist_100_8'
-
 wavefront_transform:
-    phase_initialization_strategy: 0
+  phase_initialization_strategy: 0
 
 # Start of new parameters
 planes:
@@ -137,6 +125,5 @@ don:
   load_checkpoint: False
   objective_function: 'mse'
 
-crop_size_micron: 4500.e-6
 slm0_host: '10.10.80.1'
-  #slm1_host: '10.10.71.1'
+slm1_host: '10.10.81.1'
