@@ -4,32 +4,38 @@
 seed: [True, 1337]
 train: True
 model_id: 'early_testing'
-demo: True
+model: 'cooperative'
 torch_home: '~/.cache/torch/'
 
 #--------------------------------
-#       Training Params
+#       Co-op Training Params
 #--------------------------------
-
 batch_size: 1
-num_epochs: 20
+num_epochs: 1
 accelerator: 'gpu' 
 gpu_config: [True, [0]]
 valid_rate: 1
+classifier_image: 'bench' # bench, sim, ideal
+learning_rate: 1.e-3
+
+alpha: 1.0
+beta: 1.0
+gamma: 1.0
+delta: 1.0
 
 #--------------------------------
 #       All paths
 #--------------------------------
-
 paths: &id001
   path_root:
   path_data: 'data/'
   path_train: 'train/'
   path_valid: 'valid/'
-  path_model: 'my_models/'
   path_results: 'results/'
   path_checkpoints: 'checkpoints/'
   path_images: 'images/'
+  path_logs: 'logs/'
+  path_lens_phase: 'lens_phase/'
 
 #--------------------------------
 #       Classifier
@@ -38,73 +44,62 @@ classifier:
   num_classes: 10
   architecture: 'resnet18'
   learning_rate: 1.e-3
-  transfer_learn: False
+  transfer_learn: True
   freeze_backbone: False
 
 #--------------------------------
-#       Datamodule Params
+#       DOM params
 #--------------------------------
-which: 'MNIST' #MNIST
-n_cpus: 20
-resize_row: 720
-resize_col: 720
-data_split: 'mnist_1000perClass'
-Nxp: 1080
-Nyp: 1920
-# positive is down and right
-lateral_shift_x: 0 # up and down
-lateral_shift_y: 0 # left and right
+wavelength: &wavelength 520.e-6
 
-wavefront_transform:
-  phase_initialization_strategy: 0
-
-# Start of new parameters
 planes:
   0: &idpl00
-    name: 'plane0'
+    name: 'input_plane'
     center: [0,0,0]
-      #size: [8.96e-3, 15.36e-3]
-    size: [8960.0,15360.0]
+    size: [8.64, 15.36]
     normal: [0,0,1]
-    Nx: 1080
-    Ny: 1920
+    Nx: &input_x 1080
+    Ny: &input_y 1920
   1: &idpl01
-    name: 'plane1'
-    center: [0.0,0.0,318000]
-    size: [8960.0,15360.0]
-      #size: [5543.2e-6,9676.8e-6]
+    name: 'lens_plane'
+    center: [0,0,762]
+    size: [8.64, 15.36]
     normal: [0,0,1]
     Nx: 1080
     Ny: 1920
-      #2: &idpl02
-      #  name: 'plane2'
-      #  center: [0,0,434.9e-3]
-      #  size: [8.96e-3, 15.36e-3]
-      #  normal: [0,0,1]
-      #  Nx: 1080
-      #  Ny: 1920
+  2: &idpl02
+    name: 'output_plane'
+    center: [0,0, 1200.0]
+    size: [5.4432, 9.6768]
+    normal: [0,0,1]
+    Nx: 1080
+    Ny: 1920
 
 modulators:
   0: &idm00
+    gradients : 'none'
     amplitude_init : 'uniform'
-    phase_init : 'random'
+    amplitude_value: 1.0
+    pinhole_size: 'none'
+    phase_init : 'uniform'
+    phase_value: 0.0
+    focal_length: 'none'
+    wavelength: *wavelength 
+  1: &idm01
     gradients : 'phase_only'
-    phase_pattern : None
-    amplitude_pattern : None
-    kwargs:
-      #1: &idm01
-      #  amplitude_init : 'uniform'
-      #  phase_init : 'custom'
-      #  gradients : 'phase_only'
-      #  phase_pattern : 'lens'
-      #  amplitude_pattern : None
-      #  kwargs:
-      #    focal_length: 90.e-3
-      #    wavelength: 1.55e-6 
+    amplitude_init : 'uniform'
+    amplitude_value : 1.0
+    pinhole_size: 0.0
+    phase_init : 'lens_phase'
+    phase_value : 0.0
+    focal_length: 285.75
+    wavelength: *wavelength
 
 propagator: &idprop
+  wavelength: *wavelength
+  fft_type: 'auto'
   prop_type: 'rsc'
-  wavelength: 0.520
+  padded : True
 
 diffraction_blocks:
   0:
@@ -112,18 +107,42 @@ diffraction_blocks:
     output_plane : *idpl01
     modulator_params : *idm00
     propagator_params : *idprop
-      #1:
-      #  input_plane : *idpl01
-      #  output_plane : *idpl02
-      #  modulator_params : *idm01
-      #  propagator_params : *idprop
+  1:
+    input_plane : *idpl01
+    output_plane : *idpl02
+    modulator_params : *idm01
+    propagator_params : *idprop
 
-don:
+dom_training:
   optimizer: 'ADAM'
-  learning_rate: 5.e-2
+  learning_rate: 3.e-1
   transfer_learn: False
   load_checkpoint: False
   objective_function: 'mse'
 
+#--------------------------------
+#       SLM params
+#--------------------------------
 slm0_host: '10.10.80.1'
 slm1_host: '10.10.81.1'
+
+#--------------------------------
+#       Camera params
+#--------------------------------
+exposure_time: 150000 # in microseconds
+
+#--------------------------------
+#       Datamodule Params
+#--------------------------------
+which: 'MNIST' #MNIST, baseline_bench
+train_percent: 0.8
+n_cpus: 20
+resize_row: 720
+resize_col: 720
+data_split: 'data_split_00100.pt'
+which_data: 'sim_output' # Used for baseline_bench, 'sim_output', 'bench_image', 'resampled_sample'
+Nxp: *input_x
+Nyp: *input_y
+
+wavefront_transform:
+  phase_initialization_strategy: 0

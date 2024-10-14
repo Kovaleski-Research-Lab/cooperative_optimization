@@ -27,12 +27,8 @@ def run(params):
     if params['seed'][0]:
         seed_everything(params['seed'][1], workers=True)
 
-    classifier_image = params['classifier_image']
-    alpha = params['alpha']
-    beta = params['beta']
-    gamma = params['gamma']
-    delta = params['delta']
-    mcl_string = f"alpha_{alpha}_beta_{beta}_gamma_{gamma}_delta_{delta}"
+    which = params['which']
+    which_data = params['which_data']
 
     # Initialize the paths
     path_root = os.getcwd()
@@ -44,7 +40,7 @@ def run(params):
 
     path_results = os.path.join(path_root, path_results)
     path_data = os.path.join(path_root, path_data)
-    name = 'coop_{}_{}'.format(classifier_image, mcl_string)
+    name = 'coop_{}_{}'.format(which, which_data)
     version = get_next_version(path_results, name)
 
     # Initialize the CSV logger
@@ -124,26 +120,13 @@ if __name__ == "__main__":
     params['paths']['path_root'] = os.getcwd()
 
     argparser = argparse.ArgumentParser()
+    argparser.add_argument("--which_data", type=str, default='resampled_sample', help="Which element of the data to use")
     argparser.add_argument("--transfer_learn", help="Transfer learning")
-    argparser.add_argument("--classifier_image", type=str, default='bench', help="Classifier image")
-    argparser.add_argument("--alpha", type=float, default=0.5, help="Sim to ideal")
-    argparser.add_argument("--beta", type=float, default=0.5, help="Sim to bench")
-    argparser.add_argument("--gamma", type=float, default=0.5, help="Bench to ideal")
-    argparser.add_argument("--delta", type=float, default=0.5, help="Classifier loss")
-
     args = argparser.parse_args()
+    params['which_data'] = args.which_data
     params['classifier']['transfer_learn'] = int(args.transfer_learn)
-    params['classifier_image'] = args.classifier_image
-    params['alpha'] = float(args.alpha)
-    params['beta'] = float(args.beta)
-    params['gamma'] = float(args.gamma)
-    params['delta'] = float(args.delta)
     print("Running with the following parameters:")
+    print(f"which_data: {params['which_data']}")
     print(f"transfer_learn: {params['classifier']['transfer_learn']}")
-    print(f"classifier_image: {params['classifier_image']}")
-    print(f"alpha: {params['alpha']}")
-    print(f"beta: {params['beta']}")
-    print(f"gamma: {params['gamma']}")
-    print(f"delta: {params['delta']}")
     run(params)
 
