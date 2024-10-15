@@ -207,7 +207,7 @@ class customDatasetMNIST(Dataset):
         if self.transform_sample is not None:
             sample = self.transform_sample(sample)
 
-        sample = sample.abs().to(torch.complex64)
+        sample = sample.abs().to(torch.complex128)
         slm_sample = (sample.abs() * 255).to(torch.uint8)
         target = torch.nn.functional.one_hot(target, num_classes=10)
 

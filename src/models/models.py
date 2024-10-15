@@ -134,9 +134,8 @@ class CooperativeOpticalModel(pl.LightningModule):
         self.camera = thorlabs_cc215mu.Thorlabs_CC215MU(exposure_time_us=self.camera_exposure_time)
         self.dom = DOM(params)
         self.scaled_plane = self.dom.layers[0].input_plane.scale(0.53, inplace=False)
-        self.classifier = Classifier(params).float()
+        self.classifier = Classifier(params).double()
         self.register_buffer('background_image', self.get_background_image())
-
     #-----------------------------------------
     # Initialize: Optimizer
     #-----------------------------------------
@@ -192,7 +191,7 @@ class CooperativeOpticalModel(pl.LightningModule):
 
     def get_background_image(self):
         self.upload_benign_image(which=0)
-        return self.get_bench_image()
+        return self.get_bench_image().double()
 
     def get_bench_image(self):
         # Get the image from the camera
@@ -266,6 +265,7 @@ class CooperativeOpticalModel(pl.LightningModule):
         #-----------------------------------------
         classifier_loss = self.classifier.objective(classifier_output, classifier_target)
 
+
         # Total loss - right now a soft constrained MCL
         loss = self.alpha * sim_to_ideal + self.beta * sim_to_bench + self.gamma * bench_to_ideal + self.delta * classifier_loss
 
@@ -313,11 +313,11 @@ class CooperativeOpticalModel(pl.LightningModule):
 
         # Run the classifier forward
         if self.classifier_image == 'bench':
-            classifier_image = bench_image.float()
+            classifier_image = bench_image
         elif self.classifier_image == 'sim':
-            classifier_image = simulation_outputs['images'].float()
+            classifier_image = simulation_outputs['images']
         elif self.classifier_image == 'ideal':
-            classifier_image = samples.abs().float()
+            classifier_image = samples.abs()
         else:
             raise ValueError(f"Classifier image {self.classifier_image} not supported")
 
@@ -334,7 +334,7 @@ class CooperativeOpticalModel(pl.LightningModule):
     #-----------------------------------------
 
     def on_train_start(self):
-        self.upload_benign_image()
+        self.upload_benign_image(which=0)
 
     def on_train_epoch_end(self):
         # Get the phases from the simulation modulator
