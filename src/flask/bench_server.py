@@ -104,8 +104,8 @@ def update_slm():
         img = Image.open(BytesIO(file.read()))
         img.save(f'{slm_name}_temp.png')
         logger.info(f"Sending image to {slm_name}")
-        slms{slm_name}.send_scp(f'{slm_name}_temp.png')
-        slms{slm_name}.update(filename = f'/root/{slm_name}_temp.png', options = options, wait=wait) 
+        slms[slm_name].send_scp(f'{slm_name}_temp.png')
+        slms[slm_name].update(filename = f'/root/{slm_name}_temp.png', options = options, wait=wait) 
         os.remove(f"{slm_name}_temp.png")
         return jsonify({'status': 'ok', 'message': 'Image received successfully', 'shape': img_np.shape})
 
