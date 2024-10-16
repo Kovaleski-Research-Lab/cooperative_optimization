@@ -8,6 +8,7 @@ import base64
 from PIL import Image
 from io import BytesIO
 import numpy as np
+import os
 
 sys.path.append('/home/mblgh6/Documents/research')
 sys.path.append('/home/mblgh6/Documents/research/optics_benchtop')
@@ -88,7 +89,7 @@ def remove_camera():
 
 @app.route('/update_slm', methods=['POST'])
 def update_slm():
-    if 'slm_name' not in request.form or 'options' not in request.form:
+    if 'slm_name' not in request.form or 'options' not in request.form or 'wait' not in request.form:
         return jsonify({'status': 'error', 'message': 'Missing parameters'})
 
     if 'image' not in request.files:
@@ -96,12 +97,16 @@ def update_slm():
 
     file = request.files['image']
     options = request.form['options']
+    wait = requests.form['wait']
     slm_name = request.form['slm_name']
 
     try:
-        # Convert the uploaded image (binary data) to a NumPy array
         img = Image.open(BytesIO(file.read()))
-        img_np = np.array(img)
+        img.save(f'{slm_name}_temp.png')
+        logger.info(f"Sending image to {slm_name}")
+        slms{slm_name}.send_scp(f'{slm_name}_temp.png')
+        slms{slm_name}.update(filename = f'/root/{slm_name}_temp.png', options = options, wait=wait) 
+        os.remove(f"{slm_name}_temp.png")
         return jsonify({'status': 'ok', 'message': 'Image received successfully', 'shape': img_np.shape})
 
     except Exception as e:
