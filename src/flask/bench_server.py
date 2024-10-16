@@ -88,13 +88,15 @@ def remove_camera():
 
 @app.route('/update_slm', methods=['POST'])
 def update_slm():
-    if 'slm_name' not in request.form:
+    if 'slm_name' not in request.form or 'options' not in request.form:
         return jsonify({'status': 'error', 'message': 'Missing parameters'})
 
     if 'image' not in request.files:
         return jsonify({'status': 'error', 'message': 'No image provided'}), 400
 
     file = request.files['image']
+    options = request.form['options']
+    slm_name = request.form['slm_name']
 
     try:
         # Convert the uploaded image (binary data) to a NumPy array
