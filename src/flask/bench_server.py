@@ -96,18 +96,21 @@ def update_slm():
         return jsonify({'status': 'error', 'message': 'No image provided'}), 400
 
     file = request.files['image']
-    options = request.form['options']
-    wait = requests.form['wait']
+    options = request.form.getlist('options')
+    wait = float(request.form['wait'])
     slm_name = request.form['slm_name']
+    print(options)
+    print(wait)
+    print(slm_name)
 
     try:
         img = Image.open(BytesIO(file.read()))
         img.save(f'{slm_name}_temp.png')
-        logger.info(f"Sending image to {slm_name}")
+        print(f"Sending image to {slm_name}")
         slms[slm_name].send_scp(f'{slm_name}_temp.png')
         slms[slm_name].update(filename = f'/root/{slm_name}_temp.png', options = options, wait=wait) 
         os.remove(f"{slm_name}_temp.png")
-        return jsonify({'status': 'ok', 'message': 'Image received successfully', 'shape': img_np.shape})
+        return jsonify({'status': 'ok', 'message': 'Image received successfully'})
 
     except Exception as e:
         return jsonify({'status': 'error', 'message': f'Error processing image: {str(e)}'}), 500
@@ -150,14 +153,13 @@ def get_camera_image():
         cameras[camera_name].camera.issue_software_trigger()
         while image is None:
             image = cameras[camera_name].get_image(pil_image=False, eight_bit=False)
+        # Save the float NumPy array as a .npy file in-memory
+        buffer = BytesIO()
+        np.save(buffer, image)
+        buffer.seek(0)
 
-        # Convert NumPy array to PIL image (preserve data format)
-        pil_image = Image.fromarray(np.uint8(image))
-
-        # Convert the image to PNG format without compression and encode as base64
-        buffered = BytesIO()
-        pil_image.save(buffered, format="PNG")  # PNG format is lossless
-        img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+        # Encode the binary .npy data as base64 for transmission
+        img_str = base64.b64encode(buffer.getvalue()).decode('utf-8')
 
         # Return the base64-encoded image
         return jsonify({'status': 'ok', 'image': img_str})

@@ -14,11 +14,13 @@ from optics_benchtop import thorlabs_cc215mu
 
 if __name__ == "__main__":
 
-    camera = thorlabs_cc215mu.Thorlabs_CC215MU(exposure_time_us = 100000)
+    camera = thorlabs_cc215mu.Thorlabs_CC215MU(exposure_time_us = 150000)
+    print('here')
 
 
+        # Get the image from the camera
     image = None
-
+    camera.camera.issue_software_trigger()
     while image is None:
         image = camera.get_image(pil_image = False, eight_bit = False)
 
@@ -27,8 +29,11 @@ if __name__ == "__main__":
 
     counter = 0
     while True:
+        image = None
+        camera.camera.issue_software_trigger()
         while image is None:
             image = camera.get_image(pil_image = False, eight_bit = False)
+
         if image is not None:
             im.set_data(image)
             max_val = np.max(image)
