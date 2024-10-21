@@ -146,3 +146,16 @@ Nyp: *input_y
 
 wavefront_transform:
   phase_initialization_strategy: 0
+
+#--------------------------------
+# Bench flask server params
+# --------------------------------
+# Bench server URL and endpoints
+bench_server_url: 'http://128.206.20.44:10001'
+add_slm_endpoint: '/add_slm'
+add_camera_endpoint: '/add_camera'
+remove_slm_endpoint: '/remove_slm'
+remove_camera_endpoint: '/remove_camera'
+update_slm_endpoint: '/update_slm'
+get_camera_image_endpoint: '/get_camera_image'
+reset_bench_endpoint: '/reset_bench'
