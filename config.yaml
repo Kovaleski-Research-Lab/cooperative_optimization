@@ -4,19 +4,19 @@
 seed: [True, 1337]
 train: True
 model_id: 'early_testing'
-model: 'cooperative'
+model: 'cooperative_remote'
 torch_home: '~/.cache/torch/'
 
 #--------------------------------
 #       Co-op Training Params
 #--------------------------------
 batch_size: 1
-num_epochs: 1
+num_epochs: 20
 accelerator: 'gpu' 
 gpu_config: [True, [0]]
 valid_rate: 1
 classifier_image: 'bench' # bench, sim, ideal
-learning_rate: 1.e-3
+learning_rate: 1.e-4
 
 alpha: 1.0
 beta: 1.0
@@ -43,9 +43,12 @@ paths: &id001
 classifier:
   num_classes: 10
   architecture: 'resnet18'
-  learning_rate: 1.e-3
+  learning_rate: 1.e-4
   transfer_learn: True
-  freeze_backbone: False
+  freeze_backbone: True
+  freeze_linear: True
+  load_checkpoint: True
+  checkpoint_path: 'results/classifier_baseline_bench_resampled_sample/version_0/checkpoints/last.ckpt'
 
 #--------------------------------
 #       DOM params
@@ -123,13 +126,21 @@ dom_training:
 #--------------------------------
 #       SLM params
 #--------------------------------
-slm0_host: '10.10.80.1'
-slm1_host: '10.10.81.1'
+slms:
+  0: 
+    name: 'Holoeye_Pluto21_object'
+    host: '10.10.80.1'
+  1:
+    name: 'Holoeye_Pluto21_lens'
+    host: '10.10.81.1'
+
+slm_options: ['wl=520', '-fx', '-q']
 
 #--------------------------------
 #       Camera params
 #--------------------------------
-exposure_time: 150000 # in microseconds
+camera_name: 'THORLABS_CC215MU'
+camera_exposure_time: 150000 # in microseconds
 
 #--------------------------------
 #       Datamodule Params
@@ -140,7 +151,7 @@ n_cpus: 20
 resize_row: 720
 resize_col: 720
 data_split: 'data_split_00100.pt'
-which_data: 'sim_output' # Used for baseline_bench, 'sim_output', 'bench_image', 'resampled_sample'
+which_data: 'bench_image' # Used for baseline_bench, 'sim_output', 'bench_image', 'resampled_sample'
 Nxp: *input_x
 Nyp: *input_y
 

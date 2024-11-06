@@ -61,6 +61,8 @@ def run(params):
             save_last = True,
             verbose = False,
             save_on_train_epoch_end = True,
+            monitor = 'loss_train',
+            save_top_k = 3,
             )
 
     # Initialize the directory for saving lens phase

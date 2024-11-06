@@ -1,21 +1,25 @@
 import os
 import sys
-from loguru import logger
-import numpy as np
 import yaml
-from PIL import Image
-import matplotlib.pyplot as plt
 import torch
+import base64
+import requests
+import numpy as np
+import time
+from PIL import Image
+from io import BytesIO
+from loguru import logger
 import pytorch_lightning as pl
-from torchmetrics import F1Score, Accuracy, Precision, Recall, ConfusionMatrix
+import matplotlib.pyplot as plt
 from torchvision.models import resnet18, resnet34, resnet50
+from torchmetrics import F1Score, Accuracy, Precision, Recall, ConfusionMatrix
 from torchvision.models import ResNet18_Weights, ResNet34_Weights, ResNet50_Weights
 
 
-sys.path.append('/home/mblgh6/Documents/research/optics_benchtop')
-sys.path.append('/home/mblgh6/Documents/research/cooperative_optimization')
-from optics_benchtop import holoeye_pluto21
-from optics_benchtop import thorlabs_cc215mu
+sys.path.append('/home/mblgh6/Documents/optics_benchtop')
+sys.path.append('/home/mblgh6/Documents/cooperative_optimization')
+#import holoeye_pluto21
+#import thorlabs_cc215mu
 from diffractive_optical_model.diffractive_optical_model import DOM
 from src.utils.spatial_resample import spatial_resample
 
@@ -34,6 +38,7 @@ class Classifier(pl.LightningModule):
         self.learning_rate = self.params['learning_rate']
         self.transfer_learn = self.params['transfer_learn']
         self.freeze_backbone = self.params['freeze_backbone']
+        self.freeze_linear = self.params['freeze_linear']
 
         self.select_model()
 
@@ -72,10 +77,14 @@ class Classifier(pl.LightningModule):
             for p in backbone.parameters():
                 p.requires_grad = False
 
-        num_filters = backbone.fc.in_features
-        layers = list(backbone.children())[:-1]
-        self.feature_extractor = torch.nn.Sequential(*layers)
-        self.classifier = torch.nn.Linear(num_filters, self.num_classes)
+        if self.freeze_linear:
+            for p in backbone.fc.parameters():
+                p.requires_grad = False
+        else:
+            num_filters = backbone.fc.in_features
+            layers = list(backbone.children())[:-1]
+            self.feature_extractor = torch.nn.Sequential(*layers)
+            self.classifier = torch.nn.Linear(num_filters, self.num_classes)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
@@ -320,6 +329,8 @@ class CooperativeOpticalModel(pl.LightningModule):
         else:
             raise ValueError(f"Classifier image {self.classifier_image} not supported")
 
+        from IPython import embed; embed()
+
         classifier_output, classifier_target = self.classifier_forward(classifier_image, classifier_targets)
 
         return {'simulation_outputs': simulation_outputs,
@@ -397,14 +408,28 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         self.paths = params['paths']
         self.classifier_image = params['classifier_image']
         self.alpha, self.beta, self.gamma, self.delta = params['alpha'], params['beta'], params['gamma'], params['delta']
-        self.slm0 = holoeye_pluto21.HoloeyePluto(host=params['slm0_host'])
-        self.slm1 = holoeye_pluto21.HoloeyePluto(host=params['slm1_host'])
-        self.camera_exposure_time = int(params['exposure_time'])
-        self.camera = thorlabs_cc215mu.Thorlabs_CC215MU(exposure_time_us=self.camera_exposure_time)
+
+        self.parse_bench_api_endpoints()
+        self.init_bench()
+
         self.dom = DOM(params)
         self.scaled_plane = self.dom.layers[0].input_plane.scale(0.53, inplace=False)
-        self.classifier = Classifier(params).double()
+
+
+        if self.params['classifier']['load_checkpoint']:
+            self.classifier = Classifier.load_from_checkpoint(os.path.join(self.paths['path_root'], self.params['classifier']['checkpoint_path']), strict=False).double()
+            if self.params['classifier']['freeze_backbone']:
+                for p in self.classifier.feature_extractor.parameters():
+                    p.requires_grad = False
+
+            if self.params['classifier']['freeze_linear']:
+                for p in self.classifier.classifier.parameters():
+                    p.requires_grad = False
+        else:
+            self.classifier = Classifier(params).double()
+
         self.register_buffer('background_image', self.get_background_image())
+        self.num_saturated_pixels = []
     #-----------------------------------------
     # Initialize: Optimizer
     #-----------------------------------------
@@ -414,44 +439,74 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
     #-----------------------------------------
     # Initialize: SLM utilities
     #-----------------------------------------
-    def send_to_slm(self, slm_pattern, which = None):
-        img = Image.fromarray(slm_pattern)
-        if which == 0:
-            img.save('temp0.png')
-            logger.info("Sending image to SLM0")
-            self.slm0.send_scp('temp0.png')
-        elif which == 1:
-            img.save('temp1.png')
-            logger.info("Sending image to SLM1")
-            self.slm1.send_scp('temp1.png')
-        else:
-            raise ValueError(f"SLM {which} not supported")
+    def parse_bench_api_endpoints(self):
+        self.bench_server_url = self.params['bench_server_url']
+        self.add_slm_endpoint = self.params['add_slm_endpoint']
+        self.add_camera_endpoint = self.params['add_camera_endpoint']
+        self.remove_slm_endpoint = self.params['remove_slm_endpoint']
+        self.remove_camera_endpoint = self.params['remove_camera_endpoint']
+        self.update_slm_endpoint = self.params['update_slm_endpoint']
+        self.get_camera_image_endpoint = self.params['get_camera_image_endpoint']
+        self.reset_bench_endpoint = self.params['reset_bench_endpoint']
 
-    def update_slm(self, which = None, wait=None):
-        if which == 0:
-            logger.info("Updating SLM0")
-            self.slm0.update(filename='/root/temp0.png', options=['wl=520', '-fx', '-q'], wait=wait)
-            os.remove('temp0.png')
-        elif which == 1:
-            logger.info("Updating SLM1")
-            self.slm1.update(filename='/root/temp1.png', options=['wl=520', '-fx', '-q'], wait=wait)
-            os.remove('temp1.png')
-        else:
-            raise ValueError(f"SLM {which} not supported")
+    def add_slms(self):
+        responses = []
+        self.slms = {}
+        self.slm_options = self.params['slm_options']
+        for slm in self.params['slms']:
+            slm_name = self.params['slms'][slm]['name']
+            slm_host = self.params['slms'][slm]['host']
+            slm_params = {  'slm_name': slm_name,
+                            'slm_host': slm_host,
+                          }
+            self.slms[slm] = slm_params
+            responses.append(requests.post(self.bench_server_url + self.add_slm_endpoint, json=slm_params))
+            logger.info(responses[-1].text)
+        return responses
+
+    def add_camera(self):
+        camera_name = self.params['camera_name']
+        camera_exposure_time = self.params['camera_exposure_time']
+        # Add a camera
+        camera_params = {   'camera_name': camera_name,
+                            'camera_exposure_time': camera_exposure_time,
+                        }
+        self.camera = camera_params
+        response = requests.post(self.bench_server_url + self.add_camera_endpoint, json=camera_params)
+        logger.info(response.text)
+        return response
+
+    def init_bench(self):
+        # Clear the bech
+        response = requests.post(self.bench_server_url + self.reset_bench_endpoint)
+        # Add the SLMs
+        self.add_slms()
+        # Add the camera
+        self.add_camera()
+    
+    def send_to_slm(self, slm_pattern, which = None, wait=0.1):
+        # If the image is a numpy array, convert it to a PIL image
+        if isinstance(slm_pattern, np.ndarray):
+            slm_pattern = Image.fromarray(slm_pattern)
+        buffered = BytesIO()
+        slm_pattern.save(buffered, format="PNG")
+        buffered.seek(0)
+        files = {'image': ('image.png', buffered, 'image/png')}
+        payload = {'slm_name': self.slms[which]['slm_name'], 'options': self.slm_options, 'wait': wait}
+        response = requests.post(self.bench_server_url + self.update_slm_endpoint, files=files, data=payload)
+        logger.info(response.text)
+
+        return response
 
     def upload_benign_image(self, which=None):
         logger.warning("Uploading benign image to SLM")
         image = np.zeros((1080, 1920), dtype=np.uint8)
         img = Image.fromarray(image)
-        if which == 0:
-            img.save('benign0.png')
-            self.slm0.send_scp('benign0.png')
-            self.slm0.update(filename='/root/benign0.png', options=['wl=520', '-fx', '-q'])
-        elif which == 1:
-            img.save('benign1.png')
-            self.slm1.send_scp('benign1.png')
-            self.slm1.update(filename='/root/benign1.png', options=['wl=520', '-fx', '-q'])
+        if which is not None:
+            response = self.send_to_slm(img, which=which)
         else:
+            response0 = self.send_to_slm(img, which=0)
+            response1 = self.send_to_slm(img, which=1)
             raise ValueError(f"SLM {which} not supported")
 
     #-----------------------------------------
@@ -460,25 +515,39 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
 
     def get_background_image(self):
         self.upload_benign_image(which=0)
+        time.sleep(1)
         return self.get_bench_image().double()
 
     def get_bench_image(self):
-        # Get the image from the camera
-        image = None
-        self.camera.camera.issue_software_trigger()
-        while image is None:
-            image = self.camera.get_image(pil_image = False, eight_bit = False)
-        image = torch.from_numpy(image).to(self.device)
+        # Get an image from the camera
+        payload = {'camera_name': self.camera['camera_name']}
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(self.bench_server_url + self.get_camera_image_endpoint, json=payload, headers=headers)
 
-        return image
+        if response.status_code == 200:
+            data = response.json()
+            if data['status'] == 'ok':
+                image = base64.b64decode(data['image'])
+                image = BytesIO(image)
+                image = np.load(image)
+                return torch.from_numpy(image).to(self.device)
+            else:
+                print(f"Error : {data['message']}")
+                return None
+        else:
+            print(f"Error : {response.status_code} - {response.reason}")
+            return None
 
     #-----------------------------------------
     # Initialize: Optical model utilities
     #-----------------------------------------
 
-    def get_lens_from_dom(self):
+    def get_lens_from_dom(self, raw = False):
         # Get the phases from the simualtion modulator
         phases = self.dom.layers[1].modulator.get_phase(with_grad = False)
+
+        if raw:
+            return phases
 
         # Phase wrap - [0, 2pi]
         phases = phases % (2 * torch.pi)
@@ -555,11 +624,15 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         # Send to SLM
         slm_sample = slm_sample.squeeze().cpu().numpy().astype(np.uint8)
         self.send_to_slm(slm_sample, which=0)
-        self.update_slm(which=0)
         self.send_to_slm(lens_phase, which=1)
-        self.update_slm(which=1, wait=0.5)
         # Get the image from the camera
         image = self.get_bench_image()
+        self.num_saturated_pixels.append(torch.sum(image > 0.9))
+        print(self.num_saturated_pixels[-1])
+        if self.num_saturated_pixels[-1] > 1000:
+            self.upload_benign_image(which=0)
+            self.upload_benign_image(which=1)
+            raise ValueError("Image saturated")
         image = torch.abs(image - self.background_image)
         return image, lens_phase
 
@@ -582,7 +655,8 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
 
         # Run the classifier forward
         if self.classifier_image == 'bench':
-            classifier_image = bench_image
+            classifier_image = simulation_outputs['images'].clone()
+            classifier_image.data = bench_image
         elif self.classifier_image == 'sim':
             classifier_image = simulation_outputs['images']
         elif self.classifier_image == 'ideal':
@@ -607,7 +681,7 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
 
     def on_train_epoch_end(self):
         # Get the phases from the simulation modulator
-        phases = self.get_lens_from_dom()
+        phases = self.get_lens_from_dom(raw = True)
         # Get the current epoch
         epoch = self.current_epoch
         # Save the lens phase
@@ -666,6 +740,8 @@ def select_model(params):
         model = Classifier(params)
     elif params['model'] == 'cooperative':
         model = CooperativeOpticalModel(params)
+    elif params['model'] == 'cooperative_remote':
+        model = CooperativeOpticalModelRemote(params)
     else:
         raise ValueError("Model not supported")
     return model
@@ -675,7 +751,7 @@ if __name__ == "__main__":
     sys.path.append('../')
     params = yaml.load(open('../../config.yaml', 'r'), Loader=yaml.FullLoader)
     params['paths']['path_root'] = '../../'
-    model = CooperativeOpticalModel(params)
+    model = select_model(params)
     from datamodule.datamodule import select_data
 
     datamodule = select_data(params)
@@ -686,3 +762,5 @@ if __name__ == "__main__":
     sample, slm_sample, target = batch
 
     outputs = model(sample, slm_sample, target)
+
+    from IPython import embed; embed()
