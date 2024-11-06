@@ -136,7 +136,7 @@ slms:
 
 slm_options: ['wl=520', '-fx', '-q']
 
-#--------------------------------
+#--------------------------------s
 #       Camera params
 #--------------------------------
 camera_name: 'THORLABS_CC215MU'
@@ -154,6 +154,8 @@ data_split: 'data_split_00100.pt'
 which_data: 'bench_image' # Used for baseline_bench, 'sim_output', 'bench_image', 'resampled_sample'
 Nxp: *input_x
 Nyp: *input_y
+shift_x: 200
+shift_y: 0
 
 wavefront_transform:
   phase_initialization_strategy: 0

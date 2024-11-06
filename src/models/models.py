@@ -415,7 +415,6 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         self.dom = DOM(params)
         self.scaled_plane = self.dom.layers[0].input_plane.scale(0.53, inplace=False)
 
-
         if self.params['classifier']['load_checkpoint']:
             self.classifier = Classifier.load_from_checkpoint(os.path.join(self.paths['path_root'], self.params['classifier']['checkpoint_path']), strict=False).double()
             if self.params['classifier']['freeze_backbone']:

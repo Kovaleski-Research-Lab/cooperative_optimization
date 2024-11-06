@@ -14,6 +14,7 @@ import sys
 sys.path.append('../')
 sys.path.append('../../')
 from src.datamodule.datamodule import select_data
+from src.utils.spatial_resample import spatial_resample
 from diffractive_optical_model.diffractive_optical_model import DOM
 
 def add_slm(slm_name, slm_host, bench_server_url, add_slm_endpoint):
@@ -110,10 +111,6 @@ if __name__ == "__main__":
     config = yaml.load(open("../../config.yaml", "r"), Loader=yaml.FullLoader)
     config['paths']['path_root'] = '../../'
 
-    slm0_host = config['slm0_host']
-    slm1_host = config['slm1_host']
-    camera_exposure_time = config['exposure_time']
-
     # Bench server URL and endpoints
     bench_server_url = config['bench_server_url']
     add_slm_endpoint = config['add_slm_endpoint']
@@ -134,27 +131,37 @@ if __name__ == "__main__":
     train_loader = datamodule.train_dataloader()
 
     # Create the slm options
-    options = ['shf=1', 'wl=520','-fx', '-q']
+    options0 = ['shf=1', 'wl=520','-fx', '-q']
+    options1 = ['shf=1', 'wl=520','-fx', '-q']
 
     # Create SLMs
-    slm0_name = 'slm0'
-    slm1_name = 'slm1'
+    slm0_params = config['slms'][0]
+    slm0_name = slm0_params['name']
+    slm0_host = slm0_params['host']
+
+    slm1_params = config['slms'][1]
+    slm1_name = slm1_params['name']
+    slm1_host = slm1_params['host']
     response = add_slm(slm0_name, slm0_host, bench_server_url, add_slm_endpoint)
     response = add_slm(slm1_name, slm1_host, bench_server_url, add_slm_endpoint)
+
     # Create camera
-    camera_name = 'thorlabs_cc215mu'
+    camera_name = config['camera_name']
+    camera_exposure_time = config['camera_exposure_time']
     response = add_camera(camera_name, camera_exposure_time, bench_server_url, add_camera_endpoint)
     print(get_bench_info(bench_server_url).text)
 
     # Initialize a DOM simulation
     dom = DOM(config)
 
+    scaled_plane = dom.layers[0].input_plane.scale(0.53, inplace=False)
+
     # Get the lens phases from the DOM
     lens_phase = get_lens_from_dom(dom)
 
     # Send the lens phase to slm1
-    wait = 2
-    response = send_to_slm(slm1_name, options, wait, bench_server_url, update_slm_endpoint, lens_phase)
+    wait = 0
+    response = send_to_slm(slm1_name, options1, wait, bench_server_url, update_slm_endpoint, lens_phase)
 
     # Get the intial plane params from the config file
     plane_params = config['planes'][0]
@@ -167,7 +174,7 @@ if __name__ == "__main__":
     image = np.zeros((nx, ny), dtype=np.uint8)
 
     # Send the image to the SLM0
-    response = send_to_slm(slm0_name, options, wait, bench_server_url, update_slm_endpoint, image)
+    response = send_to_slm(slm0_name, options0, wait, bench_server_url, update_slm_endpoint, image)
 
     # Get a background image
     image = get_camera_image(camera_name, bench_server_url, get_camera_image_endpoint)
@@ -183,8 +190,10 @@ if __name__ == "__main__":
         batch = next(iter(train_loader))
         images, slm_sample, labels = batch
         # Send to slm
-        response = send_to_slm(slm0_name, options, 0.5, bench_server_url, update_slm_endpoint, slm_sample.squeeze().numpy())
+        response = send_to_slm(slm0_name, options0, 0.5, bench_server_url, update_slm_endpoint, slm_sample.squeeze().numpy())
         time.sleep(args.delay)
+
+        images = spatial_resample(scaled_plane, images.abs(), dom.layers[1].output_plane).squeeze()
 
         # Get camera image
         image = get_camera_image(camera_name, bench_server_url, get_camera_image_endpoint)

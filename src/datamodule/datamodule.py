@@ -128,6 +128,8 @@ class Wavefront_MNIST_DataModule(LightningDataModule):
     def initialize_transform(self) -> None:
         resize_row = self.params['resize_row']
         resize_col = self.params['resize_col']
+        shift_x = self.params['shift_x']
+        shift_y = self.params['shift_y']
 
         pad_x = int(torch.div((self.Nx - resize_row), 2, rounding_mode='floor'))
         pad_y = int(torch.div((self.Ny - resize_col), 2, rounding_mode='floor'))
@@ -137,6 +139,7 @@ class Wavefront_MNIST_DataModule(LightningDataModule):
         self.transform = transforms.Compose([
                 transforms.Resize((resize_row, resize_col), antialias=True), # type: ignore
                 transforms.Pad(padding),
+                ct.LinearShift(shift_x=shift_x, shift_y=shift_y),
                 ct.Threshold(0.2),
                 ct.WavefrontTransform(self.params['wavefront_transform'])])
 

@@ -3,6 +3,7 @@
 #--------------------------------
 
 import torch
+import torch.nn.functional as F
 from loguru import logger
 
 #--------------------------------
@@ -61,3 +62,48 @@ class Threshold(object):
 
     def __call__(self, sample):
         return (sample > self.threshold)
+
+
+#--------------------------------
+# Initialize: Linear shift transform
+#--------------------------------
+
+class LinearShift:
+    def __init__(self, shift_x: int = 0, shift_y: int = 0):
+        """
+        Args:
+            shift_x (int): Number of pixels to shift horizontally. Positive is right, negative is left.
+            shift_y (int): Number of pixels to shift vertically. Positive is down, negative is up.
+        """
+        self.shift_x = shift_x
+        self.shift_y = shift_y
+
+    def __call__(self, img: torch.Tensor) -> torch.Tensor:
+        # Ensure image is a tensor with a batch dimension
+        if len(img.shape) == 2:  # If grayscale without channel dimension
+            img = img.unsqueeze(0).unsqueeze(0)
+        elif len(img.shape) == 3 and img.shape[0] == 1:  # If grayscale with channel dimension
+            img = img.unsqueeze(0)
+        
+        # Original height and width
+        _, _, h, w = img.size()
+        
+        # Padding needed for positive and negative shifts
+        pad_left = max(0, -self.shift_x)
+        pad_right = max(0, self.shift_x)
+        pad_top = max(0, -self.shift_y)
+        pad_bottom = max(0, self.shift_y)
+
+        # Apply the padding
+        img = F.pad(img, (pad_left, pad_right, pad_top, pad_bottom))
+
+        # Crop to the original size
+        crop_top = pad_top
+        crop_bottom = crop_top + h
+        crop_left = pad_left
+        crop_right = crop_left + w
+
+        img = img[:, :, crop_top:crop_bottom, crop_left:crop_right]
+
+        return img.squeeze(0) if len(img.shape) == 4 else img
+
