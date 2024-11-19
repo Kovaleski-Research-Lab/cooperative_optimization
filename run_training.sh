@@ -16,6 +16,6 @@ do
     # For each of the transfer_learn values, call train.py --transfer_learn {transfer_learn}
     for transfer_learn in "${transfer_learn_list[@]}"
     do
-        python train.py --which_data $which_data --transfer_learn $transfer_learn
+        python train_classifier.py --which_data $which_data --transfer_learn $transfer_learn
     done
 done

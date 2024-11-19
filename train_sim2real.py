@@ -27,9 +27,6 @@ def run(params):
     if params['seed'][0]:
         seed_everything(params['seed'][1], workers=True)
 
-    which = params['which']
-    which_data = params['which_data']
-
     # Initialize the paths
     path_root = os.getcwd()
     params['paths']['path_root'] = path_root
@@ -40,7 +37,7 @@ def run(params):
 
     path_results = os.path.join(path_root, path_results)
     path_data = os.path.join(path_root, path_data)
-    name = 'classifier_{}_{}'.format(which, which_data)
+    name = 'sim2real'
     version = get_next_version(path_results, name)
 
     # Initialize the CSV logger
@@ -58,7 +55,7 @@ def run(params):
             verbose = False,
             save_on_train_epoch_end = True,
             monitor = 'loss_train',
-            save_top_k = 1,
+            save_top_k = 3,
             )
 
     # Initialize the directory for saving lens phase
@@ -118,20 +115,11 @@ def run(params):
 
 if __name__ == "__main__":
     # Load the parameters
-    params = yaml.load(open('config.yaml', 'r'), Loader=yaml.FullLoader)
+    params = yaml.load(open('config_sim2real.yaml', 'r'), Loader=yaml.FullLoader)
     params['paths']['path_root'] = os.getcwd()
 
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("--which_data", type=str, default='resampled_sample', help="Which element of the data to use")
-    argparser.add_argument("--transfer_learn", help="Transfer learning")
-    argparser.add_argument("--freeze_backbone", help="Freeze the backbone")
+
     args = argparser.parse_args()
-    params['which_data'] = args.which_data
-    params['classifier']['transfer_learn'] = int(args.transfer_learn)
-    params['classifier']['freeze_backbone'] = int(args.freeze_backbone)
-    print("Running with the following parameters:")
-    print(f"which_data: {params['which_data']}")
-    print(f"transfer_learn: {params['classifier']['transfer_learn']}")
-    print(f"freeze_backbone: {params['classifier']['freeze_backbone']}")
     run(params)
 

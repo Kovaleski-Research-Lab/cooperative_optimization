@@ -180,6 +180,9 @@ if __name__ == "__main__":
     image = get_camera_image(camera_name, bench_server_url, get_camera_image_endpoint)
     background_image = np.asarray(image)
 
+    plt.imshow(background_image, cmap='gray', vmin=0, vmax=1)
+    plt.show()
+
     fig, ax = plt.subplots(3,1)
     im0 = ax[0].imshow(background_image, cmap='gray', vmin=0, vmax=1)
     im1 = ax[1].imshow(background_image, cmap='gray', vmin=0, vmax=1)
@@ -197,7 +200,7 @@ if __name__ == "__main__":
 
         # Get camera image
         image = get_camera_image(camera_name, bench_server_url, get_camera_image_endpoint)
-        camera_image = image - background_image
+        camera_image = np.abs(image - background_image)
         camera_image = camera_image / np.max(camera_image)
         im0.set_data(camera_image)
         im1.set_data(images.squeeze().abs().numpy())

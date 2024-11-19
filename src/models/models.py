@@ -47,6 +47,7 @@ class Classifier(pl.LightningModule):
         self.precision = Precision(task = 'multiclass', num_classes=self.num_classes)
         self.recall = Recall(task = 'multiclass', num_classes=self.num_classes)
         self.cfm = ConfusionMatrix(task = 'multiclass', num_classes=self.num_classes)
+        self.double()
 
         self.save_hyperparameters()
 
@@ -59,32 +60,31 @@ class Classifier(pl.LightningModule):
             if self.transfer_learn:
                 backbone = resnet18(weights = ResNet18_Weights.DEFAULT)
             else:
-                backbone = resnet18(pretrained = False)
+                backbone = resnet18(weights = None)
         elif self.architecture == 'resnet34':
             if self.transfer_learn:
                 backbone = resnet34(weights = ResNet34_Weights.DEFAULT)
             else:
-                backbone = resnet34(pretrained = False)
+                backbone = resnet34(weights = None)
         elif self.architecture == 'resnet50':
             if self.transfer_learn:
                 backbone = resnet50(weights = ResNet50_Weights.DEFAULT)
             else:
-                backbone = resnet50(pretrained = False)
+                backbone = resnet50(weights = None)
         else:
             raise ValueError("Architecture not supported")
 
         if self.freeze_backbone:
+            logger.info("Freezing backbone")
             for p in backbone.parameters():
                 p.requires_grad = False
-
-        if self.freeze_linear:
-            for p in backbone.fc.parameters():
-                p.requires_grad = False
         else:
-            num_filters = backbone.fc.in_features
-            layers = list(backbone.children())[:-1]
-            self.feature_extractor = torch.nn.Sequential(*layers)
-            self.classifier = torch.nn.Linear(num_filters, self.num_classes)
+            logger.info("Training backbone")
+
+        num_filters = backbone.fc.in_features
+        layers = list(backbone.children())[:-1]
+        self.feature_extractor = torch.nn.Sequential(*layers)
+        self.classifier = torch.nn.Linear(num_filters, self.num_classes)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
@@ -413,7 +413,7 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         self.init_bench()
 
         self.dom = DOM(params)
-        self.scaled_plane = self.dom.layers[0].input_plane.scale(0.53, inplace=False)
+        self.scaled_plane = self.dom.layers[0].input_plane.scale(0.6, inplace=False)
 
         if self.params['classifier']['load_checkpoint']:
             self.classifier = Classifier.load_from_checkpoint(os.path.join(self.paths['path_root'], self.params['classifier']['checkpoint_path']), strict=False).double()
@@ -513,7 +513,9 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
     #-----------------------------------------
 
     def get_background_image(self):
+        lens_phase = self.get_lens_from_dom()
         self.upload_benign_image(which=0)
+        self.send_to_slm(lens_phase, which=1)
         time.sleep(1)
         return self.get_bench_image().double()
 
@@ -619,6 +621,7 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         return simulation_outputs
 
     def bench_forward(self, slm_sample):
+        self.get_background_image()
         lens_phase = self.get_lens_from_dom()
         # Send to SLM
         slm_sample = slm_sample.squeeze().cpu().numpy().astype(np.uint8)
@@ -730,6 +733,45 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         self.log('classifier_loss_val', classifier_loss, on_step=False, on_epoch=True, sync_dist=True)
         return loss
 
+
+#-----------------------------------------
+# Initialize: Sim2Real Optical Model
+#-----------------------------------------
+class Sim2Real(pl.LightningModule):
+    def __init__(self, params):
+        super().__init__()
+        self.params = params
+        self.paths = params['paths']
+        self.dom = DOM(params)
+
+    def configure_optimizers(self):
+        return torch.optim.Adam(self.parameters(), lr=self.params['learning_rate'])
+
+    def objective(self, sim_wavefront, batch):
+        sim_image = sim_wavefront.abs()**2
+        bench_image = batch[1]
+        loss = torch.nn.functional.mse_loss(sim_image, bench_image)
+        return loss
+
+    def forward(self, u:torch.Tensor):
+        sim_wavefront = self.dom.forward(u)
+        return sim_wavefront
+
+    def training_step(self, batch, batch_idx):
+        sample, bench_image = batch
+        output = self.forward(sample)
+        loss = self.objective(output, batch)
+        self.log('loss_train', loss, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        sample, bench_image = batch
+        outputs = self.forward(sample)
+        loss = self.objective(outputs, batch)
+        self.log('loss_val', loss, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
+        return loss
+        
+
 #-----------------------------------------
 # Initialize: Select model utility
 #-----------------------------------------
@@ -741,6 +783,8 @@ def select_model(params):
         model = CooperativeOpticalModel(params)
     elif params['model'] == 'cooperative_remote':
         model = CooperativeOpticalModelRemote(params)
+    elif params['model'] == 'sim2real':
+        model = Sim2Real(params)
     else:
         raise ValueError("Model not supported")
     return model

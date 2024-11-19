@@ -95,9 +95,9 @@ class customDatasetBaseline(Dataset):
         if self.which_data == 'resampled_sample':
             sample = data['resampled_sample']
         elif self.which_data == 'bench_image':
-            sample = data['bench_image'].float()
+            sample = data['bench_image'].double()
         elif self.which_data == 'sim_output':
-            sample = data['sim_output']
+            sample = data['sim_output'].detach()
         else:
             raise NotImplementedError("Data {} not implemented".format(self.which_data))
         target = data['target']
@@ -128,8 +128,6 @@ class Wavefront_MNIST_DataModule(LightningDataModule):
     def initialize_transform(self) -> None:
         resize_row = self.params['resize_row']
         resize_col = self.params['resize_col']
-        shift_x = self.params['shift_x']
-        shift_y = self.params['shift_y']
 
         pad_x = int(torch.div((self.Nx - resize_row), 2, rounding_mode='floor'))
         pad_y = int(torch.div((self.Ny - resize_col), 2, rounding_mode='floor'))
@@ -139,7 +137,6 @@ class Wavefront_MNIST_DataModule(LightningDataModule):
         self.transform = transforms.Compose([
                 transforms.Resize((resize_row, resize_col), antialias=True), # type: ignore
                 transforms.Pad(padding),
-                ct.LinearShift(shift_x=shift_x, shift_y=shift_y),
                 ct.Threshold(0.2),
                 ct.WavefrontTransform(self.params['wavefront_transform'])])
 
@@ -216,6 +213,77 @@ class customDatasetMNIST(Dataset):
 
         return sample, slm_sample, target
 
+
+
+#--------------------------------
+# Initialize: Sim2Real datamodule
+#--------------------------------
+
+class Sim2Real_DataModule(LightningDataModule):
+    def __init__(self, params:dict):
+        super().__init__()
+        logger.debug("Initializing Sim2Real_DataModule")
+        self.params = params.copy()
+        self.n_cpus = self.params['n_cpus']
+        self.path_data = self.params['paths']['path_data']
+        self.path_root = self.params['paths']['path_root']
+        self.path_data = os.path.join(self.path_root,self.path_data)
+        self.batch_size = self.params['batch_size']
+
+    def initialize_cpus(self, n_cpus:int) -> None:
+        # Make sure default number of cpus is not more than the system has
+        if n_cpus > os.cpu_count(): # type: ignore
+            n_cpus = 1
+        self.n_cpus = n_cpus 
+        logger.debug("Setting CPUS to {}".format(self.n_cpus))
+
+    def prepare_data(self) -> None:
+        pass
+
+    def setup(self, stage: Optional[str] = None):
+        data_files = os.listdir(self.path_data)
+        self.train_data = [os.path.join(self.path_data, f) for f in data_files if 'train' in f]
+        self.valid_data = [os.path.join(self.path_data, f) for f in data_files if 'valid' in f]
+
+        if stage == "fit" or stage is None:
+            self.train_dataset = customDatasetSim2Real(self.train_data)
+            self.valid_dataset = customDatasetSim2Real(self.valid_data)
+        else:
+            raise NotImplementedError("Stage {} not implemented".format(stage))
+
+    def train_dataloader(self):
+        return DataLoader(self.train_dataset,
+                          batch_size=self.batch_size,
+                          num_workers=self.n_cpus,
+                          persistent_workers=True,
+                          shuffle=True)
+
+    def val_dataloader(self):
+        return DataLoader(self.valid_dataset,
+                          batch_size=self.batch_size,
+                          num_workers=self.n_cpus,
+                          persistent_workers=True,
+                          shuffle=False)
+
+#--------------------------------
+# Initialize: Custom sim2real dataset
+#--------------------------------
+
+class customDatasetSim2Real(Dataset):
+    def __init__(self, data):
+        logger.debug("Initializing customDatasetSim2Real")
+        self.data_filenames = data
+
+    def __len__(self):
+        return len(self.data_filenames)
+
+    def __getitem__(self, idx):
+
+        data = torch.load(self.data_filenames[idx], weights_only=True)
+        sample = data['resampled_sample']
+        bench_image = data['bench_image'].double()
+        return sample.unsqueeze(0), bench_image.unsqueeze(0)
+
 #--------------------------------
 # Initialize: Select dataset
 #--------------------------------
@@ -225,6 +293,8 @@ def select_data(params):
         return Wavefront_MNIST_DataModule(params) 
     elif params['which'] == 'baseline_bench':
         return Baseline_Bench_DataModule(params)
+    elif params['which'] == 'sim2real':
+        return Sim2Real_DataModule(params)
     else:
         raise NotImplementedError("Dataset {} not implemented".format(params['which']))
 
@@ -249,8 +319,8 @@ if __name__=="__main__":
     dm.prepare_data()
     dm.setup(stage="fit")
 
-    from IPython import embed; embed()
     #View some of the data
-    images, target = next(iter(dm.train_dataloader()))
+    batch = next(iter(dm.train_dataloader()))
+    from IPython import embed; embed()
 
 

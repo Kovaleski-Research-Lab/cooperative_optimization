@@ -4,7 +4,7 @@ import yaml
 import torch
 from tqdm import tqdm
 sys.path.append('../')
-from models.models import CooperativeOpticalModel
+from models.models import CooperativeOpticalModelRemote, Sim2Real
 from utils.spatial_resample import spatial_resample
 from datamodule import select_data
 import pytorch_lightning as pl
@@ -15,13 +15,16 @@ if __name__ == "__main__":
     sys.path.append('../')
     params = yaml.load(open('../../config.yaml', 'r'), Loader=yaml.FullLoader)
     params['paths']['path_root'] = '../../'
-    model = CooperativeOpticalModel(params).cuda()
+    params['which'] = 'MNIST'
+    params['paths']['path_data'] = 'data/'
+    model = CooperativeOpticalModelRemote(params).cuda()
+    #model = Sim2Real(params)
 
     datamodule = select_data(params)
     datamodule.setup()
     train_dataloader = datamodule.train_dataloader()
     valid_dataloader = datamodule.val_dataloader()
-    scaled_plane = model.dom.layers[0].input_plane.scale(0.53, inplace=False)
+    scaled_plane = model.dom.layers[0].input_plane.scale(0.6, inplace=False)
 
 
     path_data_baseline = os.path.join(params['paths']['path_root'], 'data', 'baseline')
@@ -33,7 +36,7 @@ if __name__ == "__main__":
         bench_image, lens_phase = model.bench_forward(slm_sample)
         resampled_sample = spatial_resample(scaled_plane, sample.abs(), model.dom.layers[1].output_plane).squeeze()
         bench_image = bench_image.squeeze().abs().cpu()
-        sim_output = sim_output.squeeze().abs().cpu()**2
+        sim_output = sim_output['images'].squeeze().cpu().detach()
         new_images = {'resampled_sample': resampled_sample, 
                       'bench_image': bench_image, 
                       'sim_output': sim_output,
@@ -47,7 +50,7 @@ if __name__ == "__main__":
         bench_image, lens_phase = model.bench_forward(slm_sample)
         resampled_sample = spatial_resample(scaled_plane, sample.abs(), model.dom.layers[1].output_plane).squeeze()
         bench_image = bench_image.squeeze().abs().cpu()
-        sim_output = sim_output.squeeze().abs().cpu()**2
+        sim_output = sim_output['images'].squeeze().cpu().detach()
         new_images = {'resampled_sample': resampled_sample, 
                       'bench_image': bench_image, 
                       'sim_output': sim_output,

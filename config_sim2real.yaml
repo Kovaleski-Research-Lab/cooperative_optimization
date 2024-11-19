@@ -3,8 +3,7 @@
 #--------------------------------
 seed: [True, 1337]
 train: True
-model_id: 'early_testing'
-model: 'coop_remote'
+model: 'sim2real'
 torch_home: '~/.cache/torch/'
 
 #--------------------------------
@@ -15,20 +14,14 @@ num_epochs: 20
 accelerator: 'gpu' 
 gpu_config: [True, [0]]
 valid_rate: 1
-classifier_image: 'ideal' # bench, sim, ideal
-learning_rate: 1.e-4
-
-alpha: 1.0
-beta: 1.0
-gamma: 1.0
-delta: 1.0
+learning_rate: 3.e-1
 
 #--------------------------------
 #       All paths
 #--------------------------------
 paths: &id001
   path_root:
-  path_data: 'data/'
+  path_data: 'data/baseline'
   path_train: 'train/'
   path_valid: 'valid/'
   path_results: 'results/'
@@ -36,19 +29,6 @@ paths: &id001
   path_images: 'images/'
   path_logs: 'logs/'
   path_lens_phase: 'lens_phase/'
-
-#--------------------------------
-#       Classifier
-#--------------------------------
-classifier:
-  num_classes: 10
-  architecture: 'resnet18'
-  learning_rate: 1.e-3
-  transfer_learn: False
-  freeze_backbone: False
-  freeze_linear: False
-  load_checkpoint: False
-  checkpoint_path: 'results/classifier_baseline_bench_resampled_sample/version_0/checkpoints/last.ckpt'
 
 #--------------------------------
 #       DOM params
@@ -64,13 +44,20 @@ planes:
     Nx: &input_x 1080
     Ny: &input_y 1920
   1: &idpl01
+    name: 'calibration_plane'
+    center: [0,0, 381]
+    size: [8.64, 15.36]
+    normal: [0,0,1]
+    Nx: 1080
+    Ny: 1920
+  2: &idpl02
     name: 'lens_plane'
     center: [0,0,762]
     size: [8.64, 15.36]
     normal: [0,0,1]
     Nx: 1080
     Ny: 1920
-  2: &idpl02
+  3: &idpl03
     name: 'output_plane'
     center: [0,0, 1219.2]
     size: [5.4432, 9.6768]
@@ -89,7 +76,16 @@ modulators:
     focal_length: 'none'
     wavelength: *wavelength 
   1: &idm01
-    gradients : 'phase_only'
+    gradients : 'complex'
+    amplitude_init : 'uniform'
+    amplitude_value: 1.0
+    pinhole_size: 'none'
+    phase_init : 'uniform'
+    phase_value: 0.5
+    focal_length: 'none'
+    wavelength: *wavelength 
+  2: &idm02
+    gradients : 'none'
     amplitude_init : 'uniform'
     amplitude_value : 1.0
     pinhole_size: 0.0
@@ -115,6 +111,11 @@ diffraction_blocks:
     output_plane : *idpl02
     modulator_params : *idm01
     propagator_params : *idprop
+  2:
+    input_plane : *idpl02
+    output_plane : *idpl03
+    modulator_params : *idm02
+    propagator_params : *idprop
 
 dom_training:
   optimizer: 'ADAM'
@@ -124,28 +125,9 @@ dom_training:
   objective_function: 'mse'
 
 #--------------------------------
-#       SLM params
-#--------------------------------
-slms:
-  0: 
-    name: 'Holoeye_Pluto21_object'
-    host: '10.10.80.1'
-  1:
-    name: 'Holoeye_Pluto21_lens'
-    host: '10.10.81.1'
-
-slm_options: ['wl=520', '-fx', '-q']
-
-#--------------------------------s
-#       Camera params
-#--------------------------------
-camera_name: 'THORLABS_CC215MU'
-camera_exposure_time: 150000 # in microseconds
-
-#--------------------------------
 #       Datamodule Params
 #--------------------------------
-which: 'MNIST' #MNIST, baseline_bench, sim2real
+which: 'sim2real' #MNIST, baseline_bench, sim2real
 train_percent: 0.8
 n_cpus: 20
 resize_row: 720
@@ -159,16 +141,3 @@ Nyp: *input_y
 
 wavefront_transform:
   phase_initialization_strategy: 0
-
-#--------------------------------
-# Bench flask server params
-# --------------------------------
-# Bench server URL and endpoints
-bench_server_url: 'http://128.206.20.44:10001'
-add_slm_endpoint: '/add_slm'
-add_camera_endpoint: '/add_camera'
-remove_slm_endpoint: '/remove_slm'
-remove_camera_endpoint: '/remove_camera'
-update_slm_endpoint: '/update_slm'
-get_camera_image_endpoint: '/get_camera_image'
-reset_bench_endpoint: '/reset_bench'
