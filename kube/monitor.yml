@@ -1,29 +1,55 @@
-apiVersion: batch/v1
-kind: Job
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: pirnn-monitor
+  name: coop-monitor
+  namespace: gpn-mizzou-muem
 spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coop-monitor
   template:
+    metadata:
+      labels:
+        app: coop-monitor
     spec:
+      automountServiceAccountToken: false
+      affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+                - matchExpressions:
+                  - key: topology.kubernetes.io/region
+                    operator: In
+                    values:
+                      - us-central
       containers:
-      - name: pirnn-monitor
-        image: kovaleskilab/coop:v1
-        workingDir: /develop/code
-        command: ["/bin/bash", "-c"]
-        args: ["sleep 5000"]
-        volumeMounts:
-            - name: meep-dataset-v2
-              mountPath: /develop/data
-        resources:
-            limits:
-              memory: 10Gi
-              cpu: 1
+        - name: coop-monitor
+          image: kovaleskilab/coop:v1
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+          imagePullPolicy: Always
+          command: ["/bin/bash", "-c"]
+          args: ["sleep infinity"]
+          resources:
             requests:
-              memory: 10Gi
+              memory: 8Gi
+              cpu: 1 
+            limits:
+              memory: 8Gi
               cpu: 1
+          ports:
+            - containerPort: 10001
+          volumeMounts:
+            - name: coop-data
+              mountPath: /develop/data
+            - name: coop-results
+              mountPath: /develop/results
       volumes:
-      - name: meep-dataset-v2
-        persistentVolumeClaim:
-            claimName: meep-dataset-v2
-      restartPolicy: Never      
-  backoffLimit: 1
+        - name: coop-data
+          persistentVolumeClaim:
+            claimName: coop-data
+        - name: coop-results
+          persistentVolumeClaim:
+            claimName: coop-results

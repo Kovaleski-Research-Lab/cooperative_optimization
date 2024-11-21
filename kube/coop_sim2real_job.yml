@@ -1,0 +1,46 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: coop-sim2real
+spec:
+  template:
+    spec:
+      automountServiceAccountToken: false
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: topology.kubernetes.io/region
+                operator: In
+                values:
+                - us-central 
+      containers:
+      - name: coop-sim2real
+        image: kovaleskilab/coop:v1
+        workingDir: /develop/code/cooperative_optimization
+        command: ["/bin/bash", "-c"]
+        args: ["git pull && python train_sim2real.py"]
+        volumeMounts:
+            - name: coop-data
+              mountPath: /develop/data
+            - name: coop-results
+              mountPath: /develop/results
+        resources:
+            limits:
+              memory: 50Gi
+              cpu: 16
+              nvidia.com/a100: 1
+            requests:
+              memory: 50Gi
+              cpu: 16
+              nvidia.com/a100: 1
+      volumes:
+      - name: coop-data
+        persistentVolumeClaim:
+            claimName: coop-data
+      - name: coop-results
+        persistentVolumeClaim:
+            claimName: coop-results
+      restartPolicy: Never      
+  backoffLimit: 1

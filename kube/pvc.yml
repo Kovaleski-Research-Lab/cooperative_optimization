@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pirnn-code
+  name: coop-code
   namespace: gpn-mizzou-muem
 spec:
   storageClassName: rook-cephfs-central
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
       storage: 10Gi
@@ -15,27 +15,27 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pirnn-data
+  name: coop-data
   namespace: gpn-mizzou-muem
 spec:
   storageClassName: rook-cephfs-central
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
-      storage: 100Gi
+      storage: 200Gi
 
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pirnn-results
+  name: coop-results
   namespace: gpn-mizzou-muem
 spec:
   storageClassName: rook-cephfs-central
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
-      storage: 100Gi
+      storage: 200Gi
 

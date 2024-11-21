@@ -22,7 +22,7 @@ spec:
           # the image: can be from any pubic facing registry
           image: rclone/rclone
           # the working dir when the container starts
-          workingDir: /data
+          workingDir: /develop/results
           # should Kube pull it
           imagePullPolicy: IfNotPresent
           # environment
@@ -46,8 +46,8 @@ spec:
               "--copy-links",
               "--auto-confirm",
               "--transfers=16",
-              "nautilus:pirnn",
-              "/data",
+              "nautilus:coop-results",
+              "/develop/results",
             ]
           # define the resources for this container
           resources:
@@ -60,10 +60,10 @@ spec:
               cpu: 16
           # what volumes should we mount
           volumeMounts:
-            - mountPath: /data
-              name: pirnn-data
+            - mountPath: /develop/results
+              name: coop-results
       # tell Kube where to find the volumes we want to use
       volumes:
-        - name: pirnn-data
+        - name: coop-results
           persistentVolumeClaim:
-            claimName: pirnn-data
+            claimName: coop-results

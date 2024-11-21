@@ -116,7 +116,7 @@ def run(params):
 if __name__ == "__main__":
     # Load the parameters
     params = yaml.load(open('config_sim2real.yaml', 'r'), Loader=yaml.FullLoader)
-    params['paths']['path_root'] = os.getcwd()
+    params['paths']['path_root'] = "/develop/"
 
     argparser = argparse.ArgumentParser()
 
