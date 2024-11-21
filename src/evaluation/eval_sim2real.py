@@ -150,7 +150,7 @@ if __name__ == "__main__":
 
     pl.seed_everything(123)
     # Experiment path
-    path_experiment = '../../results/sim2real/version_1/'
+    path_experiment = '../../results/sim2real/version_2/'
     path_checkpoint = os.path.join(path_experiment, 'checkpoints', 'last.ckpt')
     path_config = os.path.join(path_experiment, 'config.yaml')
 
@@ -168,13 +168,15 @@ if __name__ == "__main__":
     train_files = [os.path.join(path_data, f) for f in files if 'train' in f]
     valid_files = [os.path.join(path_data, f) for f in files if 'valid' in f]
 
+    # Plot the calibration layer
+    calibration_layer = get_calibration_layer(model)
+    from IPython import embed; embed()
+    plot_calibration_layer(calibration_layer)
+
     # Plot the images
-    #plot_images(model, train_files+valid_files)
+    plot_images(model, train_files+valid_files)
     #plot_differences(model, train_files+valid_files)
 
 
-    # Plot the calibration layer
-    calibration_layer = get_calibration_layer(model)
-    plot_calibration_layer(calibration_layer)
 
 
