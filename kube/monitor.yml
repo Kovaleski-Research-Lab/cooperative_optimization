@@ -34,13 +34,13 @@ spec:
           args: ["sleep infinity"]
           resources:
             requests:
-              memory: 8Gi
-              cpu: 1 
+              memory: 100Gi
+              cpu: 20
+              nvidia.com/a100: 1
             limits:
-              memory: 8Gi
-              cpu: 1
-          ports:
-            - containerPort: 10001
+              memory: 100Gi
+              cpu: 20
+              nvidia.com/a100: 1
           volumeMounts:
             - name: coop-data
               mountPath: /develop/data
