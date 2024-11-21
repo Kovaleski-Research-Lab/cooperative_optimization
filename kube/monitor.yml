@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pirnn-monitor
+spec:
+  template:
+    spec:
+      containers:
+      - name: pirnn-monitor
+        image: kovaleskilab/coop:v1
+        workingDir: /develop/code
+        command: ["/bin/bash", "-c"]
+        args: ["sleep 5000"]
+        volumeMounts:
+            - name: meep-dataset-v2
+              mountPath: /develop/data
+        resources:
+            limits:
+              memory: 10Gi
+              cpu: 1
+            requests:
+              memory: 10Gi
+              cpu: 1
+      volumes:
+      - name: meep-dataset-v2
+        persistentVolumeClaim:
+            claimName: meep-dataset-v2
+      restartPolicy: Never      
+  backoffLimit: 1
