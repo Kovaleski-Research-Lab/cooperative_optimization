@@ -147,7 +147,7 @@ camera_exposure_time: 150000 # in microseconds
 #--------------------------------
 which: 'baseline_bench' #MNIST, baseline_bench, sim2real
 train_percent: 0.8
-n_cpus: 20
+n_cpus: 16
 resize_row: 720
 resize_col: 720
 data_split: 'data_split_00100.pt'
