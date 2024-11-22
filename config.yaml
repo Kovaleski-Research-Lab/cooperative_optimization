@@ -4,7 +4,7 @@
 seed: [True, 1337]
 train: True
 model_id: 'early_testing'
-model: 'coop_remote'
+model: 'classifier'
 torch_home: '~/.cache/torch/'
 
 #--------------------------------
@@ -28,7 +28,7 @@ delta: 1.0
 #--------------------------------
 paths: &id001
   path_root:
-  path_data: 'data/'
+  path_data: 'data/baseline'
   path_train: 'train/'
   path_valid: 'valid/'
   path_results: 'results/'
@@ -145,7 +145,7 @@ camera_exposure_time: 150000 # in microseconds
 #--------------------------------
 #       Datamodule Params
 #--------------------------------
-which: 'MNIST' #MNIST, baseline_bench, sim2real
+which: 'baseline_bench' #MNIST, baseline_bench, sim2real
 train_percent: 0.8
 n_cpus: 20
 resize_row: 720
