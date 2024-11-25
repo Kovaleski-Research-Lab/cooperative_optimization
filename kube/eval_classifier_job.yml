@@ -10,7 +10,7 @@ spec:
         image: kovaleskilab/coop:v1
         workingDir: /develop/code/cooperative_optimization
         command: ["/bin/bash", "-c"]
-        args: ["git pull && bash /develop/code/cooperative_optimization/src/evaluation/eval_classifiers.sh"]
+        args: ["git pull && python /develop/code/cooperative_optimization/src/evaluation/evaluation.py"]
         volumeMounts:
             - name: coop-data
               mountPath: /develop/data

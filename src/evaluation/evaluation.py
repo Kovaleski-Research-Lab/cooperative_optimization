@@ -654,56 +654,63 @@ def plot_feature_space(train_feature_vectors, valid_feature_vectors, train_predi
         plt.close('all')
 
 if __name__ == "__main__":
-    # Get the checkpoint path from the CLA
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--checkpoint_path', type=str, help='Path to the checkpoint')
-    args = parser.parse_args()
-    checkpoint_path = args.checkpoint_path
-    #checkpoint_path = '/devleop/results/classifier_baseline_bench_resampled_sample/version_1/'
-    path_classifier_eval = os.path.join(checkpoint_path, 'classifier_eval')
-    os.makedirs(path_classifier_eval, exist_ok=True)
-    baseline_classifier = load_classifier_checkpoint(checkpoint_path).cuda()
-    #validate_classifier_weights(baseline_classifier, checkpoint_path)
-
-    eval_images = True
+    checkpoint_paths = ['/develop/results/classifier_baseline_bench_resampled_sample/version_2/',
+                        '/develop/results/classifier_baseline_bench_resampled_sample/version_3/',
+                        '/develop/results/classifier_baseline_bench_resampled_sample/version_4/',
+                        '/develop/results/classifier_baseline_bench_sim_output/version_2/',
+                        '/develop/results/classifier_baseline_bench_sim_output/version_3/',
+                        '/develop/results/classifier_baseline_bench_sim_output/version_4/',
+                        '/develop/results/classifier_baseline_bench_bench_image/version_2/',
+                        '/develop/results/classifier_baseline_bench_bench_image/version_3/',
+                        '/develop/results/classifier_baseline_bench_bench_image/version_4/']
 
     ## Load the images
     train_images, valid_images, train_labels, valid_labels = load_images('/develop/data/baseline/')
 
-    # Plot label histograms
-    #plot_label_histogram(train_labels, valid_labels, save=True, path_save=path_classifier_eval)
+    for checkpoint_path in checkpoint_paths:
+        #checkpoint_path = '/devleop/results/classifier_baseline_bench_resampled_sample/version_1/'
+        path_classifier_eval = os.path.join(checkpoint_path, 'classifier_eval')
+        os.makedirs(path_classifier_eval, exist_ok=True)
+        baseline_classifier = load_classifier_checkpoint(checkpoint_path).cuda()
+        #validate_classifier_weights(baseline_classifier, checkpoint_path)
 
-    # Plot the images
-    #plot_images(train_images, valid_images)
-    #plot_image_differences(train_images, valid_images)
-    #plot_normalized_images(train_images, valid_images)
-    #exit()
+        eval_images = True
 
-    if eval_images:
-        # Image comparisons
-        psnr, ssim, mse, max, min, mean = compare_images(train_images, valid_images)
-        #plot_image_comparisons(psnr, ssim, mse, max, min, mean, save=True, path_save=path_classifier_eval)
-        save_image_comparisons(psnr, ssim, mse, max, min, mean, path_save=path_classifier_eval)
 
-    # Load the loss metrics
-    #metrics = load_loss_metrics(checkpoint_path)
+        # Plot label histograms
+        #plot_label_histogram(train_labels, valid_labels, save=True, path_save=path_classifier_eval)
 
-    ## Plot the loss metrics
-    #plot_loss_metrics(metrics, save=True, path_save=path_classifier_eval)
+        # Plot the images
+        #plot_images(train_images, valid_images)
+        #plot_image_differences(train_images, valid_images)
+        #plot_normalized_images(train_images, valid_images)
+        #exit()
 
-    ## Evaluate the classifier
-    train_feature_vectors, train_predictions = eval_classifier(baseline_classifier, train_images)
-    valid_feature_vectors, valid_predictions = eval_classifier(baseline_classifier, valid_images)
+        if eval_images:
+            # Image comparisons
+            psnr, ssim, mse, max, min, mean = compare_images(train_images, valid_images)
+            #plot_image_comparisons(psnr, ssim, mse, max, min, mean, save=True, path_save=path_classifier_eval)
+            save_image_comparisons(psnr, ssim, mse, max, min, mean, path_save=path_classifier_eval)
 
-    save_classifier_results(path_classifier_eval, train_feature_vectors, train_predictions, valid_feature_vectors, valid_predictions)
-    #train_feature_vectors, train_predictions, valid_feature_vectors, valid_predictions = load_classifier_results(path_classifier_eval)
+        # Load the loss metrics
+        #metrics = load_loss_metrics(checkpoint_path)
 
-    # Classifier confusion matrices
-    #confusion_matrices = calculate_confusion_matrices(train_predictions, valid_predictions)
+        ## Plot the loss metrics
+        #plot_loss_metrics(metrics, save=True, path_save=path_classifier_eval)
 
-    #plot_confusion_matrics(confusion_matrices, save=True, path_save=path_classifier_eval)
+        ## Evaluate the classifier
+        train_feature_vectors, train_predictions = eval_classifier(baseline_classifier, train_images)
+        valid_feature_vectors, valid_predictions = eval_classifier(baseline_classifier, valid_images)
 
-    # Calculate F1 scores
-    f1_scores = calculate_f1_scores(train_predictions, valid_predictions)
-    torch.save(f1_scores, os.path.join(path_classifier_eval, 'f1_scores.pt'))
+        save_classifier_results(path_classifier_eval, train_feature_vectors, train_predictions, valid_feature_vectors, valid_predictions)
+        #train_feature_vectors, train_predictions, valid_feature_vectors, valid_predictions = load_classifier_results(path_classifier_eval)
+
+        # Classifier confusion matrices
+        #confusion_matrices = calculate_confusion_matrices(train_predictions, valid_predictions)
+
+        #plot_confusion_matrics(confusion_matrices, save=True, path_save=path_classifier_eval)
+
+        # Calculate F1 scores
+        f1_scores = calculate_f1_scores(train_predictions, valid_predictions)
+        torch.save(f1_scores, os.path.join(path_classifier_eval, 'f1_scores.pt'))
 
