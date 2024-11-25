@@ -9,6 +9,7 @@ import pandas as pd
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from diffractive_optical_model.diffractive_optical_model import DOM
+import argparse
 
 from torchmetrics import ConfusionMatrix
 #from sklearn.metrics import confusion_matrix
@@ -653,7 +654,13 @@ def plot_feature_space(train_feature_vectors, valid_feature_vectors, train_predi
         plt.close('all')
 
 if __name__ == "__main__":
-    checkpoint_path = '/devleop/results/classifier_baseline_bench_resampled_sample/version_1/'
+    # Get the checkpoint path from the CLA
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--checkpoint_path', type=str, help='Path to the checkpoint')
+    args = parser.parse_args()
+    checkpoint_path = args.checkpoint_path
+    from IPython import embed; embed()
+    #checkpoint_path = '/devleop/results/classifier_baseline_bench_resampled_sample/version_1/'
     path_classifier_eval = os.path.join(checkpoint_path, 'classifier_eval')
     os.makedirs(path_classifier_eval, exist_ok=True)
     baseline_classifier = load_classifier_checkpoint(checkpoint_path).cuda()
