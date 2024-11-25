@@ -5,16 +5,16 @@ import yaml
 import torch
 import numpy as np
 import pandas as pd
-import seaborn as sns
+#import seaborn as sns
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from diffractive_optical_model.diffractive_optical_model import DOM
 
 from torchmetrics import ConfusionMatrix
-from sklearn.metrics import confusion_matrix
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
-import umap
+#from sklearn.metrics import confusion_matrix
+#from sklearn.decomposition import PCA
+#from sklearn.manifold import TSNE
+#import umap
 from torchmetrics.classification import F1Score, Accuracy, Precision, Recall
 
 from torchmetrics.functional.image import peak_signal_noise_ratio as PSNR
@@ -304,6 +304,17 @@ def plot_image_comparisons(psnr, ssim, mse, max, min, mean, save=False, path_sav
     plot_comparisons(psnr, ssim, mse, save=save, path_save=path_save)
     plot_count_statistics(max, min, mean, save=save, path_save=path_save)
     return
+
+def save_image_comparisons(psnr, ssim, mse, max, min, mean, path_save=None):
+    if path_save is None:
+        raise ValueError('Path to save the image comparisons is not provided')
+    else:
+        torch.save(psnr, os.path.join(path_save, 'psnr.pt'))
+        torch.save(ssim, os.path.join(path_save, 'ssim.pt'))
+        torch.save(mse, os.path.join(path_save, 'mse.pt'))
+        torch.save(max, os.path.join(path_save, 'max.pt'))
+        torch.save(min, os.path.join(path_save, 'min.pt'))
+        torch.save(mean, os.path.join(path_save, 'mean.pt'))
 
 def plot_comparisons(psnr, ssim, mse, save=False, path_save=None):
     labels = ['Simulation to ideal', 'Bench to ideal', 'Simulation to bench']
@@ -642,53 +653,53 @@ def plot_feature_space(train_feature_vectors, valid_feature_vectors, train_predi
         plt.close('all')
 
 if __name__ == "__main__":
-    plt.style.use('seaborn-v0_8-dark-palette')
-    checkpoint_path = '../../results/classifier_baseline_bench_resampled_sample/version_1/'
+    checkpoint_path = '/devleop/results/classifier_baseline_bench_resampled_sample/version_1/'
     path_classifier_eval = os.path.join(checkpoint_path, 'classifier_eval')
     os.makedirs(path_classifier_eval, exist_ok=True)
     baseline_classifier = load_classifier_checkpoint(checkpoint_path).cuda()
     #validate_classifier_weights(baseline_classifier, checkpoint_path)
 
-    eval_images = False
+    eval_images = True
 
     ## Load the images
-    train_images, valid_images, train_labels, valid_labels = load_images('../../data/baseline/')
+    train_images, valid_images, train_labels, valid_labels = load_images('/develop/data/baseline/')
 
     # Plot label histograms
-    plot_label_histogram(train_labels, valid_labels, save=True, path_save=path_classifier_eval)
+    #plot_label_histogram(train_labels, valid_labels, save=True, path_save=path_classifier_eval)
 
     # Plot the images
-    plot_images(train_images, valid_images)
+    #plot_images(train_images, valid_images)
     #plot_image_differences(train_images, valid_images)
     #plot_normalized_images(train_images, valid_images)
-    exit()
+    #exit()
 
     if eval_images:
         # Image comparisons
         psnr, ssim, mse, max, min, mean = compare_images(train_images, valid_images)
-        plot_image_comparisons(psnr, ssim, mse, max, min, mean, save=True, path_save=path_classifier_eval)
+        #plot_image_comparisons(psnr, ssim, mse, max, min, mean, save=True, path_save=path_classifier_eval)
+        save_image_comparisons(psnr, ssim, mse, max, min, mean, path_save=path_classifier_eval)
 
     # Load the loss metrics
-    metrics = load_loss_metrics(checkpoint_path)
+    #metrics = load_loss_metrics(checkpoint_path)
 
     ## Plot the loss metrics
-    plot_loss_metrics(metrics, save=True, path_save=path_classifier_eval)
+    #plot_loss_metrics(metrics, save=True, path_save=path_classifier_eval)
 
     ## Evaluate the classifier
-    #train_feature_vectors, train_predictions = eval_classifier(baseline_classifier, train_images)
-    #valid_feature_vectors, valid_predictions = eval_classifier(baseline_classifier, valid_images)
+    train_feature_vectors, train_predictions = eval_classifier(baseline_classifier, train_images)
+    valid_feature_vectors, valid_predictions = eval_classifier(baseline_classifier, valid_images)
 
-    #save_classifier_results(path_classifier_eval, train_feature_vectors, train_predictions, valid_feature_vectors, valid_predictions)
-    train_feature_vectors, train_predictions, valid_feature_vectors, valid_predictions = load_classifier_results(path_classifier_eval)
+    save_classifier_results(path_classifier_eval, train_feature_vectors, train_predictions, valid_feature_vectors, valid_predictions)
+    #train_feature_vectors, train_predictions, valid_feature_vectors, valid_predictions = load_classifier_results(path_classifier_eval)
 
     # Classifier confusion matrices
-    confusion_matrices = calculate_confusion_matrices(train_predictions, valid_predictions)
+    #confusion_matrices = calculate_confusion_matrices(train_predictions, valid_predictions)
 
-    plot_confusion_matrics(confusion_matrices, save=True, path_save=path_classifier_eval)
+    #plot_confusion_matrics(confusion_matrices, save=True, path_save=path_classifier_eval)
 
     # Calculate F1 scores
     f1_scores = calculate_f1_scores(train_predictions, valid_predictions)
     torch.save(f1_scores, os.path.join(path_classifier_eval, 'f1_scores.pt'))
 
     # Classifier feature spaces
-    plot_feature_space(train_feature_vectors, valid_feature_vectors, train_predictions, valid_predictions, save=True, path_save=path_classifier_eval)
+    #plot_feature_space(train_feature_vectors, valid_feature_vectors, train_predictions, valid_predictions, save=True, path_save=path_classifier_eval)

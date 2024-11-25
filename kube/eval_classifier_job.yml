@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: marshall-eval-classifiers
+spec:
+  template:
+    spec:
+      containers:
+      - name: marshall-eval-classifiers
+        image: kovaleskilab/coop:v1
+        workingDir: /develop/code/cooperative_optimization
+        command: ["/bin/bash", "-c"]
+        args: ["git pull && bash ./src/evaluation/eval_classifiers_specified.sh"]
+        volumeMounts:
+            - name: coop-data
+              mountPath: /develop/data
+            - name: coop-results
+              mountPath: /develop/results
+            - name: dshm
+              mountPath: /dev/shm
+        resources:
+            limits:
+              memory: 50Gi
+              cpu: 16
+              nvidia.com/a100: 1
+            requests:
+              memory: 50Gi
+              cpu: 16
+              nvidia.com/a100: 1
+      volumes:
+      - name: coop-data
+        persistentVolumeClaim:
+            claimName: coop-data
+      - name: coop-results
+        persistentVolumeClaim:
+            claimName: coop-results
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      restartPolicy: Never      
+  backoffLimit: 1
