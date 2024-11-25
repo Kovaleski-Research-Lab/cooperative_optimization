@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir matplotlib tqdm pandas wandb pillow
 WORKDIR /develop/build
 RUN git clone https://github.com/Kovaleski-Research-Lab/diffractive_optical_model.git
 RUN pip install -e diffractive_optical_model/
+RUN pip install seaborn
+RUN pip install umap-learn
 
 WORKDIR /develop/code
 RUN git clone https://github.com/Kovaleski-Research-Lab/cooperative_optimization.git
