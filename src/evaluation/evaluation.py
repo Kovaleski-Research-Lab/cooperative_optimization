@@ -23,7 +23,7 @@ from torchmetrics.functional import mean_squared_error as MSE
 from torchmetrics.functional.image import structural_similarity_index_measure as SSIM
 from joblib import Parallel, delayed
 
-sys.path.append('../')
+sys.path.append('/develop/code/cooperative_optimization/src')
 from datamodule.datamodule import select_data
 from models.models import Classifier
 
