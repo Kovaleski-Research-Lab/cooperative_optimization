@@ -659,7 +659,6 @@ if __name__ == "__main__":
     parser.add_argument('--checkpoint_path', type=str, help='Path to the checkpoint')
     args = parser.parse_args()
     checkpoint_path = args.checkpoint_path
-    from IPython import embed; embed()
     #checkpoint_path = '/devleop/results/classifier_baseline_bench_resampled_sample/version_1/'
     path_classifier_eval = os.path.join(checkpoint_path, 'classifier_eval')
     os.makedirs(path_classifier_eval, exist_ok=True)
@@ -708,5 +707,3 @@ if __name__ == "__main__":
     f1_scores = calculate_f1_scores(train_predictions, valid_predictions)
     torch.save(f1_scores, os.path.join(path_classifier_eval, 'f1_scores.pt'))
 
-    # Classifier feature spaces
-    #plot_feature_space(train_feature_vectors, valid_feature_vectors, train_predictions, valid_predictions, save=True, path_save=path_classifier_eval)
