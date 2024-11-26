@@ -160,7 +160,8 @@ def run_model(model, data_files, save=False, path_save=None):
         data = torch.load(file, weights_only=True)
         sample = data['resampled_sample']
         bench_image = data['bench_image'].squeeze().cpu().detach()
-        original_sim_output = data['sim_output'].abs().detach().cpu()**2
+        original_sim_output = data['sim_output'].detach().cpu()
+        target = data['target']
 
         if len(sample.shape) == 2:
             sample = sample.unsqueeze(0).unsqueeze(0)
@@ -176,7 +177,7 @@ def run_model(model, data_files, save=False, path_save=None):
             split = split.split('_')
             split[0] = 'sim2real'
             split = '_'.join(split)
-            data = {'resampled_sample': sample, 'bench_image': bench_image, 'sim2real_output': sim_output, 'sim_output': original_sim_output}
+            data = {'resampled_sample': sample, 'bench_image': bench_image, 'sim2real_output': sim_output, 'sim_output': original_sim_output, 'target': target}
             torch.save(data, os.path.join(path_save, split))
 
 if __name__ == "__main__":
@@ -211,7 +212,4 @@ if __name__ == "__main__":
 
     # Save the new simulated images
     run_model(model, train_files+valid_files, save=True, path_save = '../../data/sim2real/')
-
-
-
 
