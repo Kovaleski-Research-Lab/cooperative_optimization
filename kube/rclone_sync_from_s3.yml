@@ -46,8 +46,8 @@ spec:
               "--copy-links",
               "--auto-confirm",
               "--transfers=16",
-              "nautilus:coop-results",
               "/develop/results",
+              "nautilus:coop-results",
             ]
           # define the resources for this container
           resources:

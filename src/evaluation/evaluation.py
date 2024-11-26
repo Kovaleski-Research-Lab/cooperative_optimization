@@ -426,7 +426,7 @@ def eval_classifier(classifier, images):
 
     with torch.no_grad():
         for bench_image, sim_image, ideal_image, target in tqdm(images, desc='Evaluating classifier'):
-            target = torch.from_numpy(target).unsqueeze(0).double().cuda()
+            target = torch.from_numpy(target)
             bench_image = torch.from_numpy(bench_image).unsqueeze(0).unsqueeze(0)
             bench_image = torch.cat([bench_image, bench_image, bench_image], dim=1).double().cuda()
             sim_image = torch.from_numpy(sim_image).unsqueeze(0).unsqueeze(0)
@@ -446,9 +446,9 @@ def eval_classifier(classifier, images):
             feature_vectors['sim'].append(feature_vector_sim.detach().cpu().numpy())
             feature_vectors['ideal'].append(feature_vector_ideal.detach().cpu().numpy())
 
-            predictions['bench'].append([prediction_bench.detach().cpu(), torch.argmax(target, dim=-1).cpu()])
-            predictions['sim'].append([prediction_sim.detach().cpu(), torch.argmax(target, dim=-1).cpu()])
-            predictions['ideal'].append([prediction_ideal.detach().cpu(), torch.argmax(target, dim=-1).cpu()])
+            predictions['bench'].append([prediction_bench.detach().cpu(), target.cpu()])
+            predictions['sim'].append([prediction_sim.detach().cpu(), target.cpu()])
+            predictions['ideal'].append([prediction_ideal.detach().cpu(), target.cpu()])
 
     return feature_vectors, predictions
 

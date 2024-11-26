@@ -20,11 +20,11 @@ spec:
               mountPath: /dev/shm
         resources:
             limits:
-              memory: 80Gi
+              memory: 120Gi
               cpu: 16
               nvidia.com/a100: 1
             requests:
-              memory: 80Gi
+              memory: 120Gi
               cpu: 16
               nvidia.com/a100: 1
       volumes:
