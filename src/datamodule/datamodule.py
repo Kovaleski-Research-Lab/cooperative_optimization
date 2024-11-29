@@ -353,8 +353,7 @@ class customDatasetSim2RealFlat(Dataset):
         return self.length
 
     def __getitem__(self, idx):
-        
-        sample = torch.ones(1,1080,1920) * 255
+        sample = torch.ones(1,1080,1920)
         bench_image = self.flat_field
         return sample, bench_image
 
