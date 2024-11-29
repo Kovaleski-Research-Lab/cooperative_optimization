@@ -285,6 +285,80 @@ class customDatasetSim2Real(Dataset):
         return sample.unsqueeze(0), bench_image.unsqueeze(0)
 
 #--------------------------------
+# Initialize: Sim2RealFlat datamodule
+#--------------------------------
+
+class Sim2RealFlat_DataModule(LightningDataModule):
+    def __init__(self, params:dict):
+        super().__init__()
+        logger.debug("Initializing Sim2Real_DataModule")
+        self.params = params.copy()
+        self.n_cpus = self.params['n_cpus']
+        self.batch_size = self.params['batch_size']
+        self.path_root = self.params['paths']['path_root']
+        self.path_data = self.params['paths']['path_data']
+        self.path_data = os.path.join(self.path_root,self.path_data)
+
+    def initialize_cpus(self, n_cpus:int) -> None:
+        # Make sure default number of cpus is not more than the system has
+        if n_cpus > os.cpu_count(): # type: ignore
+            n_cpus = 1
+        self.n_cpus = n_cpus 
+        logger.debug("Setting CPUS to {}".format(self.n_cpus))
+
+    def prepare_data(self) -> None:
+        pass
+
+    def setup(self, stage: Optional[str] = None):
+        if stage == "fit" or stage is None:
+            self.train_dataset = customDatasetSim2RealFlat(length=800, path_data=self.path_data)
+            self.valid_dataset = customDatasetSim2RealFlat(length=1, path_data=self.path_data)
+        else:
+            raise NotImplementedError("Stage {} not implemented".format(stage))
+
+    def train_dataloader(self):
+        return DataLoader(self.train_dataset,
+                          batch_size=self.batch_size,
+                          num_workers=self.n_cpus,
+                          persistent_workers=True,
+                          shuffle=True)
+
+    def val_dataloader(self):
+        return DataLoader(self.valid_dataset,
+                          batch_size=self.batch_size,
+                          num_workers=self.n_cpus,
+                          persistent_workers=True,
+                          shuffle=False)
+
+#--------------------------------
+# Initialize: Custom sim2real dataset
+#--------------------------------
+
+class customDatasetSim2RealFlat(Dataset):
+    def __init__(self, length=100, path_data=None):
+        logger.debug("Initializing customDatasetSim2RealFlat")
+        self.length = length
+        self.path_data = path_data
+        self.flat_field = torch.load(os.path.join(self.path_data, 'flat_field.pt'), weights_only=True)
+        # Make sure its in [C,H,W] format
+        shape = self.flat_field.shape
+        if len(shape) == 2:
+            self.flat_field = self.flat_field.unsqueeze(0)
+        elif len(shape) == 4:
+            pass
+        else:
+            raise NotImplementedError("Flat field shape {} not implemented".format(shape))
+
+    def __len__(self):
+        return self.length
+
+    def __getitem__(self, idx):
+        
+        sample = torch.ones(1,1080,1920) * 255
+        bench_image = self.flat_field
+        return sample, bench_image
+
+#--------------------------------
 # Initialize: Select dataset
 #--------------------------------
 
@@ -295,6 +369,8 @@ def select_data(params):
         return Baseline_Bench_DataModule(params)
     elif params['which'] == 'sim2real':
         return Sim2Real_DataModule(params)
+    elif params['which'] == 'sim2real_flat':
+        return Sim2RealFlat_DataModule(params)
     else:
         raise NotImplementedError("Dataset {} not implemented".format(params['which']))
 
@@ -310,7 +386,7 @@ if __name__=="__main__":
     seed_everything(1337)
 
     #Load config file   
-    params = yaml.load(open('../../config.yaml'), Loader = yaml.FullLoader).copy()
+    params = yaml.load(open('../../config_sim2real.yaml'), Loader = yaml.FullLoader).copy()
     params['batch_size'] = 3
     params['model_id'] = "test_0"
     params['paths']['path_root'] = '../../'

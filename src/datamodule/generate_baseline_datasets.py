@@ -26,8 +26,11 @@ if __name__ == "__main__":
     valid_dataloader = datamodule.val_dataloader()
     scaled_plane = model.dom.layers[0].input_plane.scale(0.6, inplace=False)
 
+    focal_length = params['modulators'][1]['focal_length']
+    new_focal_length = focal_length * 0.9
+    params['modulators'][1]['focal_length'] = new_focal_length
 
-    path_data_baseline = os.path.join(params['paths']['path_root'], 'data', 'baseline')
+    path_data_baseline = os.path.join(params['paths']['path_root'], 'data', '09focal_baseline')
     os.makedirs(path_data_baseline, exist_ok=True)
 
     for i,batch in enumerate(tqdm(train_dataloader)):
@@ -37,12 +40,11 @@ if __name__ == "__main__":
         resampled_sample = spatial_resample(scaled_plane, sample.abs(), model.dom.layers[1].output_plane).squeeze()
         bench_image = bench_image.squeeze().abs().cpu()
         sim_output = sim_output['images'].squeeze().cpu().detach()
-        new_images = {'resampled_sample': resampled_sample, 
-                      'bench_image': bench_image, 
+        new_images = {'bench_image': bench_image, 
                       'sim_output': sim_output,
                       'target': target}
                 
-        torch.save(new_images, os.path.join(path_data_baseline, f'baseline_train_{i:04d}.pt'))
+        torch.save(new_images, os.path.join(path_data_baseline, f'train_{i:04d}.pt'))
 
     for i,batch in enumerate(tqdm(valid_dataloader)):
         sample, slm_sample, target = batch
@@ -51,9 +53,8 @@ if __name__ == "__main__":
         resampled_sample = spatial_resample(scaled_plane, sample.abs(), model.dom.layers[1].output_plane).squeeze()
         bench_image = bench_image.squeeze().abs().cpu()
         sim_output = sim_output['images'].squeeze().cpu().detach()
-        new_images = {'resampled_sample': resampled_sample, 
-                      'bench_image': bench_image, 
+        new_images = {'bench_image': bench_image, 
                       'sim_output': sim_output,
                       'target': target}
                 
-        torch.save(new_images, os.path.join(path_data_baseline, f'baseline_valid_{i:04d}.pt'))
+        torch.save(new_images, os.path.join(path_data_baseline, f'valid_{i:04d}.pt'))

@@ -28,7 +28,7 @@ delta: 1.0
 #--------------------------------
 paths: &id001
   path_root:
-  path_data: 'data/baseline'
+  path_data: 'data/'
   path_train: 'train/'
   path_valid: 'valid/'
   path_results: 'results/'
@@ -140,12 +140,12 @@ slm_options: ['wl=520', '-fx', '-q']
 #       Camera params
 #--------------------------------
 camera_name: 'THORLABS_CC215MU'
-camera_exposure_time: 150000 # in microseconds
+camera_exposure_time: 100000 # in microseconds
 
 #--------------------------------
 #       Datamodule Params
 #--------------------------------
-which: 'baseline_bench' #MNIST, baseline_bench, sim2real
+which: 'MNIST' #MNIST, baseline_bench, sim2real
 train_percent: 0.8
 n_cpus: 16
 resize_row: 720
