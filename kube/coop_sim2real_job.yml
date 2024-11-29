@@ -26,6 +26,8 @@ spec:
               mountPath: /develop/data
             - name: coop-results
               mountPath: /develop/results
+            - name: dshm
+              mountPath: /dev/shm
         resources:
             limits:
               memory: 50Gi
@@ -42,5 +44,8 @@ spec:
       - name: coop-results
         persistentVolumeClaim:
             claimName: coop-results
+      - name: dshm
+        emptyDir:
+          medium: Memory
       restartPolicy: Never      
   backoffLimit: 1
