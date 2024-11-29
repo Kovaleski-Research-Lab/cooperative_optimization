@@ -28,7 +28,8 @@ def run(params):
         seed_everything(params['seed'][1], workers=True)
 
     # Initialize the paths
-    path_root = os.getcwd()
+    #path_root = os.getcwd()
+    path_root = '/develop'
     params['paths']['path_root'] = path_root
     path_results = params['paths']['path_results']
     path_data = params['paths']['path_data']
