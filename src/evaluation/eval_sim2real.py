@@ -213,5 +213,6 @@ if __name__ == "__main__":
         #plot_differences(model, train_files+valid_files)
 
         # Save the new simulated images
+        os.makedirs(os.path.join('develop/data/sim2real/' + version), exist_ok=True)
         run_model(model, train_files+valid_files, save=True, path_save = '/develop/data/sim2real/' + version)
 
