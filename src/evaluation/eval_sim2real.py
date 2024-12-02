@@ -184,7 +184,7 @@ if __name__ == "__main__":
 
     pl.seed_everything(123)
     # Experiment path
-    versions = ['version_3', 'version_4']
+    versions = ['version_3']
     for version in versions:
         path_experiment = '/develop/results/sim2real/' + version
         path_checkpoint = os.path.join(path_experiment, 'checkpoints', 'last.ckpt')
@@ -203,6 +203,7 @@ if __name__ == "__main__":
         files.sort()
         train_files = [os.path.join(path_data, f) for f in files if 'train' in f]
         valid_files = [os.path.join(path_data, f) for f in files if 'valid' in f]
+        print(len(train_files + valid_files))
 
         # Plot the calibration layer
         calibration_layer = get_calibration_layer(model, save=True, path_save=path_experiment)
