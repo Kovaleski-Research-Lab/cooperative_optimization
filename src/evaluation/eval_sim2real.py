@@ -184,7 +184,8 @@ if __name__ == "__main__":
 
     pl.seed_everything(123)
     # Experiment path
-    path_experiment = '../../results/sim2real/version_2/'
+    version = 'version_2'
+    path_experiment = '/develop/results/sim2real/' + version
     path_checkpoint = os.path.join(path_experiment, 'checkpoints', 'last.ckpt')
     path_config = os.path.join(path_experiment, 'config.yaml')
 
@@ -211,5 +212,5 @@ if __name__ == "__main__":
     #plot_differences(model, train_files+valid_files)
 
     # Save the new simulated images
-    run_model(model, train_files+valid_files, save=True, path_save = '../../data/sim2real/')
+    run_model(model, train_files+valid_files, save=True, path_save = '/develop/data/sim2real/' + version)
 
