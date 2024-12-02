@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from diffractive_optical_model.diffractive_optical_model import DOM
 
 
-sys.path.append('../')
+sys.path.append('develop/code/cooperative_optimization/src')
 from datamodule.datamodule import select_data
 from models.models import Sim2Real
 
