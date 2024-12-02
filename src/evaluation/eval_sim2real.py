@@ -198,13 +198,12 @@ if __name__ == "__main__":
 
         # I don't have a good datamodule for this eval, so we will load the images
         # manually.
-        path_data = os.path.join(config['paths']['path_root'], config['paths']['path_data'])
-        print(path_data)
+        #path_data = os.path.join(config['paths']['path_root'], config['paths']['path_data'])
+        path_data = os.path.join('/develop/data/sim2real')
         files = os.listdir(path_data)
         files.sort()
         train_files = [os.path.join(path_data, f) for f in files if 'train' in f]
         valid_files = [os.path.join(path_data, f) for f in files if 'valid' in f]
-        print(len(train_files + valid_files))
 
         # Plot the calibration layer
         calibration_layer = get_calibration_layer(model, save=True, path_save=path_experiment)
