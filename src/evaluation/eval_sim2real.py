@@ -158,7 +158,7 @@ def run_model(model, data_files, save=False, path_save=None):
     for i,file in enumerate(tqdm(data_files)):
         # Load the data
         data = torch.load(file, weights_only=True)
-        sample = data['resampled_sample']
+        sample = data['resampled_sample'].cuda()
         bench_image = data['bench_image'].squeeze().cpu().detach()
         original_sim_output = data['sim_output'].detach().cpu()
         target = data['target']
@@ -170,7 +170,7 @@ def run_model(model, data_files, save=False, path_save=None):
 
         # Forward pass
         with torch.no_grad():
-            sim_output = model.forward(sample.cpu()).detach().abs().cpu()**2
+            sim_output = model.forward(sample).detach().abs().cpu()**2
 
         if save:
             split = file.split('/')[-1]
@@ -184,33 +184,34 @@ if __name__ == "__main__":
 
     pl.seed_everything(123)
     # Experiment path
-    version = 'version_2'
-    path_experiment = '/develop/results/sim2real/' + version
-    path_checkpoint = os.path.join(path_experiment, 'checkpoints', 'last.ckpt')
-    path_config = os.path.join(path_experiment, 'config.yaml')
+    versions = ['version_3', 'version_4']
+    for version in versions:
+        path_experiment = '/develop/results/sim2real/' + version
+        path_checkpoint = os.path.join(path_experiment, 'checkpoints', 'last.ckpt')
+        path_config = os.path.join(path_experiment, 'config.yaml')
 
-    # Load the config file
-    config = yaml.load(open(path_config, 'r'), Loader=yaml.FullLoader)
+        # Load the config file
+        config = yaml.load(open(path_config, 'r'), Loader=yaml.FullLoader)
 
-    # Load the model from the checkpoint
-    model = Sim2Real.load_from_checkpoint(path_checkpoint, params=config, strict=True).cpu()
+        # Load the model from the checkpoint
+        model = Sim2Real.load_from_checkpoint(path_checkpoint, params=config, strict=True).cpu()
 
-    # I don't have a good datamodule for this eval, so we will load the images
-    # manually.
-    path_data = os.path.join(config['paths']['path_root'], config['paths']['path_data'])
-    files = os.listdir(path_data)
-    files.sort()
-    train_files = [os.path.join(path_data, f) for f in files if 'train' in f]
-    valid_files = [os.path.join(path_data, f) for f in files if 'valid' in f]
+        # I don't have a good datamodule for this eval, so we will load the images
+        # manually.
+        path_data = os.path.join(config['paths']['path_root'], config['paths']['path_data'])
+        files = os.listdir(path_data)
+        files.sort()
+        train_files = [os.path.join(path_data, f) for f in files if 'train' in f]
+        valid_files = [os.path.join(path_data, f) for f in files if 'valid' in f]
 
-    # Plot the calibration layer
-    #calibration_layer = get_calibration_layer(model, save=True, path_save=path_experiment)
-    #plot_calibration_layer(calibration_layer)
+        # Plot the calibration layer
+        calibration_layer = get_calibration_layer(model, save=True, path_save=path_experiment)
+        #plot_calibration_layer(calibration_layer)
 
-    # Plot the images
-    #plot_images(model, train_files+valid_files)
-    #plot_differences(model, train_files+valid_files)
+        # Plot the images
+        #plot_images(model, train_files+valid_files)
+        #plot_differences(model, train_files+valid_files)
 
-    # Save the new simulated images
-    run_model(model, train_files+valid_files, save=True, path_save = '/develop/data/sim2real/' + version)
+        # Save the new simulated images
+        run_model(model, train_files+valid_files, save=True, path_save = '/develop/data/sim2real/' + version)
 
