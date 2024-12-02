@@ -199,6 +199,7 @@ if __name__ == "__main__":
         # I don't have a good datamodule for this eval, so we will load the images
         # manually.
         path_data = os.path.join(config['paths']['path_root'], config['paths']['path_data'])
+        print(path_data)
         files = os.listdir(path_data)
         files.sort()
         train_files = [os.path.join(path_data, f) for f in files if 'train' in f]
