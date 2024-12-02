@@ -194,7 +194,7 @@ if __name__ == "__main__":
         config = yaml.load(open(path_config, 'r'), Loader=yaml.FullLoader)
 
         # Load the model from the checkpoint
-        model = Sim2Real.load_from_checkpoint(path_checkpoint, params=config, strict=True).cpu()
+        model = Sim2Real.load_from_checkpoint(path_checkpoint, params=config, strict=True).cuda()
 
         # I don't have a good datamodule for this eval, so we will load the images
         # manually.
