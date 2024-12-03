@@ -213,8 +213,6 @@ class customDatasetMNIST(Dataset):
 
         return sample, slm_sample, target
 
-
-
 #--------------------------------
 # Initialize: Sim2Real datamodule
 #--------------------------------
