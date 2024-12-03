@@ -34,5 +34,4 @@ if __name__ == "__main__":
 
     bench_image, lens_phase = model.bench_forward(slm_sample)
     bench_image = bench_image.squeeze().cpu()
-    from IPython import embed; embed()
     torch.save(bench_image, os.path.join(path_data_baseline, 'flat_field.pt'))

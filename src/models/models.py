@@ -17,8 +17,8 @@ from torchvision.models import ResNet18_Weights, ResNet34_Weights, ResNet50_Weig
 
 
 #sys.path.append('/home/mblgh6/Documents/optics_benchtop')
-#sys.path.append('/develop/code/cooperative_optimization')
-sys.path.append('/home/mblgh6/Documents/cooperative_optimization')
+sys.path.append('/develop/code/cooperative_optimization')
+#sys.path.append('/home/mblgh6/Documents/cooperative_optimization')
 #import holoeye_pluto21
 #import thorlabs_cc215mu
 from diffractive_optical_model.diffractive_optical_model import DOM
