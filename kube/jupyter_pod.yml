@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: coop-jupyter-gpu
+spec:
+  automountServiceAccountToken: false
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+            - key: topology.kubernetes.io/region
+              operator: In
+              values:
+                - us-central
+  containers:
+  - name: coop-jupyter-gpu
+    image: kovaleskilab/coop:v1
+    workingDir: /develop/code/cooperative_optimization
+    command: ["/bin/bash"]
+    args: ["-c", "git pull && jupyter lab --notebook-dir=/develop/code/cooperative_optimization --ip 0.0.0.0 --no-browser --allow-root"] 
+    resources:
+      limits:
+        memory: 32Gi
+        cpu: 16
+        nvidia.com/a100: 1
+      requests:
+        memory: 32Gi
+        cpu: 16
+        nvidia.com/a100: 1
+    volumeMounts:
+      - mountPath: /develop/data
+        name: coop-data
+      - mountPath: /develop/results
+        name: coop-results
+      - mountPath: /dev/shm
+        name: shared-memory
+    ports:
+      - containerPort: 8888
+  volumes:
+  - name: coop-data
+    persistentVolumeClaim:
+      claimName: coop-data
+  - name: coop-results
+    persistentVolumeClaim:
+      claimName: coop-results
+  - name: shared-memory
+    emptyDir:
+      medium: Memory
+
+
+

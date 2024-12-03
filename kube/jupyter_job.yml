@@ -1,0 +1,52 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: marshall-jupyter-job
+spec:
+  template:
+    spec:
+      automountServiceAccountToken: false
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                - key: topology.kubernetes.io/region
+                  operator: In
+                  values:
+                    - us-central
+      containers:
+      - name: marshall-jupyter-job
+        image: kovaleskilab/coop:v1
+        workingDir: /develop/code/cooperative_optimization
+        command: ["/bin/bash", "-c"]
+        args: ["git pull && jupyter lab --notebook-dir=/develop --ip 0.0.0.0 --port 8888 --no-browser --allow-root"]
+        volumeMounts:
+            - name: coop-data
+              mountPath: /develop/data
+            - name: coop-results
+              mountPath: /develop/results
+            - name: dshm
+              mountPath: /dev/shm
+        resources:
+            limits:
+              memory: 120Gi
+              cpu: 16
+              nvidia.com/a100: 1
+            requests:
+              memory: 120Gi
+              cpu: 16
+              nvidia.com/a100: 1
+        containerPort: 8888
+      volumes:
+      - name: coop-data
+        persistentVolumeClaim:
+            claimName: coop-data
+      - name: coop-results
+        persistentVolumeClaim:
+            claimName: coop-results
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      restartPolicy: Never      
+  backoffLimit: 1

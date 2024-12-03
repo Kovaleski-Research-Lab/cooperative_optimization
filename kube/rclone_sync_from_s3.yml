@@ -22,7 +22,7 @@ spec:
           # the image: can be from any pubic facing registry
           image: rclone/rclone
           # the working dir when the container starts
-          workingDir: /develop/data
+          workingDir: /develop/results
           # should Kube pull it
           imagePullPolicy: IfNotPresent
           # environment
@@ -46,8 +46,8 @@ spec:
               "--copy-links",
               "--auto-confirm",
               "--transfers=16",
-              "nautilus:coop",
-              "/develop/data",
+              "/develop/results",
+              "nautilus:coop-results",
             ]
           # define the resources for this container
           resources:
@@ -60,10 +60,10 @@ spec:
               cpu: 16
           # what volumes should we mount
           volumeMounts:
-            - mountPath: /develop/data
-              name: coop-data
+            - mountPath: /develop/results
+              name: coop-results
       # tell Kube where to find the volumes we want to use
       volumes:
-        - name: coop-data
+        - name: coop-results
           persistentVolumeClaim:
-            claimName: coop-data
+            claimName: coop-results

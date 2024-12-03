@@ -26,11 +26,11 @@ spec:
       args: ["infinity"]
       resources:
         requests:
-          memory: 120Gi
+          memory: 32Gi
           cpu: 16
           nvidia.com/a100: 1
         limits:
-          memory: 120Gi
+          memory: 32Gi
           cpu: 16
           nvidia.com/a100: 1
       volumeMounts:
