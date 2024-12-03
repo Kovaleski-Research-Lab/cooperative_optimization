@@ -46,8 +46,8 @@ spec:
               "--copy-links",
               "--auto-confirm",
               "--transfers=16",
-              "/develop/results",
-              "nautilus:coop-results",
+              "nautilus:coop-data/flat_field/",
+              "/develop/data/flat_field/",
             ]
           # define the resources for this container
           resources:
@@ -60,10 +60,10 @@ spec:
               cpu: 16
           # what volumes should we mount
           volumeMounts:
-            - mountPath: /develop/results
-              name: coop-results
+            - mountPath: /develop/data
+              name: coop-data
       # tell Kube where to find the volumes we want to use
       volumes:
-        - name: coop-results
+        - name: coop-data
           persistentVolumeClaim:
-            claimName: coop-results
+            claimName: coop-data
