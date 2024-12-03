@@ -46,7 +46,7 @@ spec:
               "--copy-links",
               "--auto-confirm",
               "--transfers=16",
-              "nautilus:coop-data/flat_field/",
+              "nautilus:coop-results/flat_field/",
               "/develop/data/flat_field/",
             ]
           # define the resources for this container
