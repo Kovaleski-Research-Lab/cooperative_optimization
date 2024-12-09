@@ -8,6 +8,12 @@ import matplotlib.pyplot as plt
 BASE_URL = "http://127.0.0.1:8000"
 
 def main():
+
+    # 5. Clean up
+    r = requests.post(f"{BASE_URL}/reset_bench")
+    r.raise_for_status()
+    print("Reset bench response:", r.json())
+
     # 1. Add SLMs
     slms_data = [
         {"slm_name": "slm0", "slm_host": "10.10.80.1"},
@@ -77,13 +83,14 @@ def main():
     if "image_data" not in camera_response:
         print("No 'image_data' field found in response. Please ensure the server encodes the image in Base64.")
         return
-
+ 
     img_data = camera_response["image_data"]
     img_bytes_decoded = base64.b64decode(img_data)
+    image = io.BytesIO(img_bytes_decoded)
+    image = np.load(image)
     
     # Display the image
-    display_img = Image.open(io.BytesIO(img_bytes_decoded))
-    plt.imshow(display_img)
+    plt.imshow(image)
     plt.axis("off")
     plt.title("Camera Image")
     plt.show()

@@ -6,6 +6,7 @@ from io import BytesIO
 from PIL import Image
 import os
 import base64
+import numpy as np
 
 # Update these paths as needed or restructure the project to avoid this approach
 sys.path.append('/home/mblgh6/Documents/research')
@@ -130,9 +131,10 @@ def get_camera_image(camera_name: str):
             # Get the image in a PIL-friendly format for easy encoding
             image = cameras[camera_name].get_image(pil_image=True, eight_bit=True)
 
+
         # Convert the PIL image to bytes
         buffer = BytesIO()
-        image.save(buffer, format="PNG")
+        np.save(buffer, image)
         buffer.seek(0)
 
         # Base64 encode the image bytes
@@ -143,6 +145,8 @@ def get_camera_image(camera_name: str):
         return {"status": "ok", "image_data": img_base64}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        print("here2")
+
 @app.post('/reset_bench')
 def reset_bench():
     slms.clear()
@@ -157,5 +161,5 @@ def info():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
 
