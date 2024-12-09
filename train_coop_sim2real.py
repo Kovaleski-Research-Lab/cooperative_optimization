@@ -20,6 +20,12 @@ def get_next_version(path_results,name):
         version += 1
     return version
 
+def get_current_version(path_results,name):
+    version = 0
+    while os.path.exists(os.path.join(path_results, name, 'version_{}'.format(version))):
+        version += 1
+    return version - 1
+
 def run(params):
     logger.info('Running the model')
 
@@ -42,10 +48,20 @@ def run(params):
     path_results = os.path.join(path_root, path_results)
     path_data = os.path.join(path_root, path_data)
     name = 'coop_sim2real_{}_{}'.format(which, which_data)
-    version = get_next_version(path_results, name)
+
+    if params['resume_training']:
+        version = get_current_version(path_results, name)
+    else:
+        version = get_next_version(path_results, name)
+
+    # Initialize the directory for saving lens phase
+    params['paths']['path_lens_phase'] = os.path.join(path_results, name, f'version_{version}', path_lens_phase)
+    lens_phase_dir = os.path.join(params['paths']['path_lens_phase'])
+    os.makedirs(lens_phase_dir, exist_ok=True)
 
     # Initialize the CSV logger
     save_dir = os.path.join(path_results, name)
+    print(save_dir)
     csv_logger = CSVLogger(save_dir = save_dir, version = 'logs', name = 'version_{}'.format(version))
 
     # Initialize the model checkpoint
@@ -59,16 +75,10 @@ def run(params):
             verbose = False,
             save_on_train_epoch_end = True,
             monitor = 'loss_train',
-            save_top_k = 1,
+            save_top_k = 2,
             )
 
-    # Initialize the directory for saving lens phase
-    params['paths']['path_lens_phase'] = os.path.join(path_results, name, f'version_{version}', path_lens_phase)
-    lens_phase_dir = os.path.join(params['paths']['path_lens_phase'])
-    os.makedirs(lens_phase_dir, exist_ok=True)
-
-    # Initialize the model
-    model = models.select_model(params)
+    model = models.select_new_model(params)
 
     # Initialize the datamodel
     dm = datamodule.select_data(params)
@@ -76,6 +86,14 @@ def run(params):
     # Get the training params
     gpu_list = params['gpu_config'][1]
     num_epochs = params['num_epochs']
+
+    # Dump the config
+    yaml.dump(params, open(os.path.join(path_root, path_results,name,f'version_{version}', 'config.yaml'), 'w'))
+
+    if params['resume_training']:
+        resume_from_checkpoint = os.path.join(checkpoint_dir, 'last.ckpt')
+    else:
+        resume_from_checkpoint = None
 
     # Initialize the PyTorch Lightning Trainer
     if params['gpu_config'][0] and torch.cuda.is_available():
@@ -112,10 +130,8 @@ def run(params):
                 )
 
     # Fit the model
-    trainer.fit(model, dm)
+    trainer.fit(model, dm, ckpt_path=resume_from_checkpoint)
 
-    # Dump the config
-    yaml.dump(params, open(os.path.join(path_root, path_results,name,f'version_{version}', 'config.yaml'), 'w'))
 
 if __name__ == "__main__":
     # Load the parameters

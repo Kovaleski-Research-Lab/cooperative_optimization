@@ -786,15 +786,19 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
         self.parse_bench_api_endpoints()
         self.init_bench()
 
+        self.dom = Sim2Real(params).dom
 
         # Load in the sim2real model, freeze the calibration layer if specified
         if self.params['sim2real']['load_checkpoint']:
-            self.dom = Sim2Real.load_from_checkpoint(os.path.join(self.paths['path_root'], self.params['sim2real']['checkpoint_path']), params = self.params, strict=True).dom
+            state_dict = torch.load(os.path.join(self.paths['path_root'], self.params['sim2real']['checkpoint_path']), weights_only=True)['state_dict']
+            # Get the opimizeable amplitude and phase from layer 1
+            phase = state_dict['dom.layers.1.modulator.optimizeable_phase']
+            amplitude = state_dict['dom.layers.1.modulator.optimizeable_amplitude']
+            self.dom.layers[1].modulator.optimizeable_phase = torch.nn.Parameter(phase)
+            self.dom.layers[1].modulator.optimizeable_amplitude = torch.nn.Parameter(amplitude)
             if self.params['sim2real']['freeze_calibration_layer']:
                 for p in self.dom.layers[1].parameters():
                     p.requires_grad = False
-        else:
-            self.dom = Sim2Real(params)
 
         # Make the phase of the lens modulator optimizeable
         self.dom.layers[2].modulator.optimizeable_phase.requires_grad = True
@@ -1140,7 +1144,7 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
 # Initialize: Select model utility
 #-----------------------------------------
 
-def select_model(params):
+def select_new_model(params):
     if params['model'] == 'classifier':
         model = Classifier(params)
     elif params['model'] == 'cooperative':
@@ -1151,6 +1155,21 @@ def select_model(params):
         model = Sim2Real(params)
     elif params['model'] == 'cooperative_remote_sim2real':
         model = CooperativeOpticalModelRemoteSim2Real(params)
+    else:
+        raise ValueError("Model not supported")
+    return model
+
+def load_previous_model(params, checkpoint_path):
+    if params['model'] == 'classifier':
+        model = Classifier.load_from_checkpoint(checkpoint_path, params = params, strict=True)
+    elif params['model'] == 'cooperative':
+        model = CooperativeOpticalModel.load_from_checkpoint(checkpoint_path, params = params, strict=True)
+    elif params['model'] == 'cooperative_remote':
+        model = CooperativeOpticalModelRemote.load_from_checkpoint(checkpoint_path, params = params, strict=True)
+    elif params['model'] == 'sim2real':
+        model = Sim2Real.load_from_checkpoint(checkpoint_path, params = params, strict=True)
+    elif params['model'] == 'cooperative_remote_sim2real':
+        model = CooperativeOpticalModelRemoteSim2Real.load_from_checkpoint(checkpoint_path, params = params, strict=True)
     else:
         raise ValueError("Model not supported")
     return model

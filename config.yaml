@@ -164,7 +164,7 @@ wavefront_transform:
 # Bench flask server params
 # --------------------------------
 # Bench server URL and endpoints
-bench_server_url: 'http://127.0.0.1:8000'
+bench_server_url: 'http://128.206.20.44:8000'
 add_slm_endpoint: '/add_slm'
 add_camera_endpoint: '/add_camera'
 remove_slm_endpoint: '/remove_slm'
