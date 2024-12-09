@@ -28,7 +28,7 @@ delta: 1.0
 #--------------------------------
 paths: &id001
   path_root:
-  path_data: 'data/baseline'
+  path_data: 'data/'
   path_train: 'train/'
   path_valid: 'valid/'
   path_results: 'results/'
@@ -145,7 +145,7 @@ camera_exposure_time: 100000 # in microseconds
 #--------------------------------
 #       Datamodule Params
 #--------------------------------
-which: 'baseline_bench' #MNIST, baseline_bench, sim2real
+which: 'MNIST' #MNIST, baseline_bench, sim2real
 train_percent: 0.8
 n_cpus: 16
 resize_row: 720
@@ -164,7 +164,7 @@ wavefront_transform:
 # Bench flask server params
 # --------------------------------
 # Bench server URL and endpoints
-bench_server_url: 'http://128.206.20.44:10001'
+bench_server_url: 'http://127.0.0.1:8000'
 add_slm_endpoint: '/add_slm'
 add_camera_endpoint: '/add_camera'
 remove_slm_endpoint: '/remove_slm'
