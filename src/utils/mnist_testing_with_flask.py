@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import base64
 from io import BytesIO
 import torch
+import io
 
 import requests
 import sys
@@ -22,57 +23,83 @@ def add_slm(slm_name, slm_host, bench_server_url, add_slm_endpoint):
     slm_params = {  'slm_name': slm_name,
                     'slm_host': slm_host,
                   }
-    response = requests.post(bench_server_url + add_slm_endpoint, json=slm_params)
-    return response
+    r = requests.post(bench_server_url + add_slm_endpoint, json=slm_params)
+    r.raise_for_status()
+    print("Add SLM response:", r.json())
+    return r
 
 def add_camera(camera_name, camera_exposure_time, bench_server_url, add_camera_endpoint):
     # Add a camera
     camera_params = {   'camera_name': camera_name,
                         'camera_exposure_time': camera_exposure_time,
                     }
-    response = requests.post(bench_server_url + add_camera_endpoint, json=camera_params)
-    return response
+    r = requests.post(bench_server_url + add_camera_endpoint, json=camera_params)
+    r.raise_for_status()
+
+    print("Add camera response:", r.json())
+    return r
 
 def get_camera_image(camera_name, bench_server_url, get_camera_image_endpoint):
     # Get an image from the camera
-    payload = {'camera_name': camera_name}
-    headers = {'Content-Type': 'application/json'}
-    response = requests.post(bench_server_url + get_camera_image_endpoint, json=payload, headers=headers)
 
-    if response.status_code == 200:
-        data = response.json()
-        if data['status'] == 'ok':
-            image = base64.b64decode(data['image'])
-            image = BytesIO(image)
-            image = np.load(image)
-            return image
-        else:
-            print(f"Error : {data['message']}")
-            return None
-    else:
-        print(f"Error : {response.status_code} - {response.reason}")
-        return None
+    r = requests.get(bench_server_url + get_camera_image_endpoint, params={"camera_name": camera_name})
+    r.raise_for_status()
+    camera_response = r.json()
+    print("Get camera image response received.")
+
+    # Decode the Base64 image
+    # The server code from previous examples would return something like:
+    # {"status": "ok", "image_data": "<base64_string>"}
+    # If your server returns raw data differently, adjust accordingly.
+    if "image_data" not in camera_response:
+        print("No 'image_data' field found in response. Please ensure the server encodes the image in Base64.")
+        return
+ 
+    img_data = camera_response["image_data"]
+    img_bytes_decoded = base64.b64decode(img_data)
+    image = io.BytesIO(img_bytes_decoded)
+    image = np.load(image)
+    return image
 
 def send_to_slm(slm_name, options, wait, bench_server_url, update_slm_endpoint, image):
     # If the image is a numpy array, convert it to a PIL image
     if isinstance(image, np.ndarray):
         image = Image.fromarray(image)
 
-    buffered = BytesIO()
-    image.save(buffered, format="PNG")
-    buffered.seek(0)
+    # Save the image to memory for uploading
+    img_bytes = io.BytesIO()
+    image.save(img_bytes, format='PNG')
+    img_bytes.seek(0)
+    
+    # We'll use the same image and same options for both SLMs
+    # Adjust "options" and "wait" as needed for your setup
+    update_data = {
+        "options": options,
+        "wait": wait
+    }
 
-    files = {'image': ('image.png', buffered, 'image/png')}
-    payload = {'slm_name': slm_name, 'options': options, 'wait': wait}
-    response = requests.post(bench_server_url + update_slm_endpoint, files=files, data=payload)
-    return response
+    files = {
+        "image": ("random.png", img_bytes, "image/png")
+    }
+    
+    data = {
+        "slm_name": slm_name,
+        "options": update_data["options"],
+        "wait": str(update_data["wait"])
+    }
 
+    r = requests.post(bench_server_url+update_slm_endpoint, data=data, files=files)
+    r.raise_for_status()
+    print(f"Update SLM {slm_name} response:", r.json())
+    return r
 
 def get_bench_info(bench_server_url):
     # Get the bench info
     info_api_endpoint = '/info'
-    response = requests.get(bench_server_url + info_api_endpoint)
-    return response
+    r = requests.get(bench_server_url + info_api_endpoint)
+    r.raise_for_status()
+    print("Get bench info response:", r.json())
+    return r
 
 def get_lens_from_dom(dom):
     # Get the phases from the simualtion modulator
