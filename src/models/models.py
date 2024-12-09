@@ -461,7 +461,8 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
                           }
             self.slms[slm] = slm_params
             responses.append(requests.post(self.bench_server_url + self.add_slm_endpoint, json=slm_params))
-            logger.info(responses[-1].text)
+            responses[-1].raise_for_status()
+            logger.info(responses[-1].json())
         return responses
 
     def add_camera(self):
@@ -473,12 +474,14 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
                         }
         self.camera = camera_params
         response = requests.post(self.bench_server_url + self.add_camera_endpoint, json=camera_params)
-        logger.info(response.text)
+        response.raise_for_status()
+        logger.info(response.json())
         return response
 
     def init_bench(self):
         # Clear the bech
         response = requests.post(self.bench_server_url + self.reset_bench_endpoint)
+        response.raise_for_status()
         # Add the SLMs
         self.add_slms()
         # Add the camera
@@ -494,8 +497,8 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         files = {'image': ('image.png', buffered, 'image/png')}
         payload = {'slm_name': self.slms[which]['slm_name'], 'options': self.slm_options, 'wait': wait}
         response = requests.post(self.bench_server_url + self.update_slm_endpoint, files=files, data=payload)
-        logger.info(response.text)
-
+        response.raise_for_status()
+        logger.info(response.json())
         return response
 
     def upload_benign_image(self, which=None):
@@ -522,23 +525,19 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
 
     def get_bench_image(self):
         # Get an image from the camera
-        payload = {'camera_name': self.camera['camera_name']}
-        headers = {'Content-Type': 'application/json'}
-        response = requests.post(self.bench_server_url + self.get_camera_image_endpoint, json=payload, headers=headers)
+        response = requests.get(self.bench_server_url + self.get_camera_image_endpoint, params={'camera_name': self.camera['camera_name']})
+        response.raise_for_status()
+        response = response.json()
 
-        if response.status_code == 200:
-            data = response.json()
-            if data['status'] == 'ok':
-                image = base64.b64decode(data['image'])
-                image = BytesIO(image)
-                image = np.load(image)
-                return torch.from_numpy(image).to(self.device)
-            else:
-                print(f"Error : {data['message']}")
-                return None
-        else:
-            print(f"Error : {response.status_code} - {response.reason}")
-            return None
+        if "image_data" not in response:
+            raise ValueError("No image data in response")
+
+        img_data = response['image_data']
+        img_bytes_decoded = base64.b64decode(img_data)
+        image = BytesIO(img_bytes_decoded)
+        image = np.load(image)
+        image = torch.from_numpy(image).double()
+        return image
 
     #-----------------------------------------
     # Initialize: Optical model utilities
@@ -851,7 +850,8 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
                           }
             self.slms[slm] = slm_params
             responses.append(requests.post(self.bench_server_url + self.add_slm_endpoint, json=slm_params))
-            logger.info(responses[-1].text)
+            responses[-1].raise_for_status()
+            logger.info(responses[-1].json())
         return responses
 
     def add_camera(self):
@@ -863,12 +863,14 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
                         }
         self.camera = camera_params
         response = requests.post(self.bench_server_url + self.add_camera_endpoint, json=camera_params)
-        logger.info(response.text)
+        response.raise_for_status()
+        logger.info(response.json())
         return response
 
     def init_bench(self):
         # Clear the bech
         response = requests.post(self.bench_server_url + self.reset_bench_endpoint)
+        response.raise_for_status()
         # Add the SLMs
         self.add_slms()
         # Add the camera
@@ -884,8 +886,8 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
         files = {'image': ('image.png', buffered, 'image/png')}
         payload = {'slm_name': self.slms[which]['slm_name'], 'options': self.slm_options, 'wait': wait}
         response = requests.post(self.bench_server_url + self.update_slm_endpoint, files=files, data=payload)
-        logger.info(response.text)
-
+        response.raise_for_status()
+        logger.info(response.json())
         return response
 
     def upload_benign_image(self, which=None):
@@ -912,23 +914,19 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
 
     def get_bench_image(self):
         # Get an image from the camera
-        payload = {'camera_name': self.camera['camera_name']}
-        headers = {'Content-Type': 'application/json'}
-        response = requests.post(self.bench_server_url + self.get_camera_image_endpoint, json=payload, headers=headers)
+        response = requests.get(self.bench_server_url + self.get_camera_image_endpoint, params={'camera_name': self.camera['camera_name']})
+        response.raise_for_status()
+        response = response.json()
 
-        if response.status_code == 200:
-            data = response.json()
-            if data['status'] == 'ok':
-                image = base64.b64decode(data['image'])
-                image = BytesIO(image)
-                image = np.load(image)
-                return torch.from_numpy(image).to(self.device)
-            else:
-                print(f"Error : {data['message']}")
-                return None
-        else:
-            print(f"Error : {response.status_code} - {response.reason}")
-            return None
+        if "image_data" not in response:
+            raise ValueError("No image data in response")
+
+        img_data = response['image_data']
+        img_bytes_decoded = base64.b64decode(img_data)
+        image = BytesIO(img_bytes_decoded)
+        image = np.load(image)
+        image = torch.from_numpy(image).double()
+        return image
 
     #-----------------------------------------
     # Initialize: Optical model utilities
