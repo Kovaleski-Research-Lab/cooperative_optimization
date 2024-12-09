@@ -1,111 +1,98 @@
-
 import requests
 import base64
-from PIL import Image
-from io import BytesIO
-import matplotlib.pyplot as plt
+import io
 import numpy as np
+from PIL import Image
+import matplotlib.pyplot as plt
 
-if __name__ == '__main__':
+BASE_URL = "http://127.0.0.1:8000"
 
-    url = "http://128.206.20.44:10001"
-    info_api_endpoint = "/info"
-    response = requests.get(url + info_api_endpoint)
-    print(response.text)
+def main():
+    # 1. Add SLMs
+    slms_data = [
+        {"slm_name": "slm0", "slm_host": "10.10.80.1"},
+        {"slm_name": "slm1", "slm_host": "10.10.81.1"}
+    ]
+    
+    for slm in slms_data:
+        r = requests.post(f"{BASE_URL}/add_slm", json=slm)
+        r.raise_for_status()
+        print("Add SLM response:", r.json())
+    
+    # 2. Add a camera
+    camera_data = {
+        "camera_name": "camera0",
+        "camera_exposure_time": 100000
+    }
+    r = requests.post(f"{BASE_URL}/add_camera", json=camera_data)
+    r.raise_for_status()
+    print("Add camera response:", r.json())
 
-    # Add a camera
-    camera_params = {
-                    'camera_name': 'thorlabs_cc215mu',
-                    'camera_exposure_time': 15000,}
-    add_camera_api_endpoint = "/add_camera"
-    response = requests.post(url + add_camera_api_endpoint, json=camera_params)
-    print(response.text)
+    # 3. Update the SLMs with a random image
+    # Generate a random image 1920x1080 (width=1920, height=1080)
+    # Numpy shape is (height, width, channels)
+    height, width = 1080, 1920
+    arr = np.random.randint(0, 256, (height, width), dtype=np.uint8)
+    img = Image.fromarray(arr)
+    
+    # Save the image to memory for uploading
+    img_bytes = io.BytesIO()
+    img.save(img_bytes, format='PNG')
+    img_bytes.seek(0)
+    
+    # We'll use the same image and same options for both SLMs
+    # Adjust "options" and "wait" as needed for your setup
+    update_data = {
+        "options": ["wl=520", "-fx"],
+        "wait": 0.1
+    }
+    
+    for slm_name in ["slm0", "slm1"]:
+        files = {
+            "image": ("random.png", img_bytes, "image/png")
+        }
+        data = {
+            "slm_name": slm_name,
+            "options": update_data["options"],
+            "wait": str(update_data["wait"])
+        }
+        
+        r = requests.post(f"{BASE_URL}/update_slm", data=data, files=files)
+        r.raise_for_status()
+        print(f"Update SLM {slm_name} response:", r.json())
+        
+        # Reset the BytesIO each time since the request consumes it
+        img_bytes.seek(0)
 
-    # Get an image from the camera
-    payload = {'camera_name': 'thorlabs_cc215mu'}
-    headers = {'Content-Type': 'application/json'}
-    get_image_api_endpoint = "/get_camera_image"
-    response = requests.post(url + get_image_api_endpoint, json=payload, headers=headers)
+    # 4. Get an image from the camera
+    r = requests.get(f"{BASE_URL}/get_camera_image", params={"camera_name": "camera0"})
+    r.raise_for_status()
+    camera_response = r.json()
+    print("Get camera image response received.")
 
-    if response.status_code == 200:
-        data = response.json()
-        if data['status'] == 'ok':
-            image = base64.b64decode(data['image'])
-            image = Image.open(BytesIO(image))
-            image = np.asarray(image)
-        else:
-            print(f"Error : {data['message']}")
-    else:
-        print(f"Error : {response.status_code} - {response.reason}")
+    # Decode the Base64 image
+    # The server code from previous examples would return something like:
+    # {"status": "ok", "image_data": "<base64_string>"}
+    # If your server returns raw data differently, adjust accordingly.
+    if "image_data" not in camera_response:
+        print("No 'image_data' field found in response. Please ensure the server encodes the image in Base64.")
+        return
 
-    # Add an SLM
-    slm_params = {
-                    'slm_name': 'slm0',
-                    'slm_host': '10.10.80.1',}
-    add_slm_api_endpoint = "/add_slm"
-    response = requests.post(url + add_slm_api_endpoint, json=slm_params)
-    print(response.text)
+    img_data = camera_response["image_data"]
+    img_bytes_decoded = base64.b64decode(img_data)
+    
+    # Display the image
+    display_img = Image.open(io.BytesIO(img_bytes_decoded))
+    plt.imshow(display_img)
+    plt.axis("off")
+    plt.title("Camera Image")
+    plt.show()
+    
+    # 5. Clean up
+    r = requests.post(f"{BASE_URL}/reset_bench")
+    r.raise_for_status()
+    print("Reset bench response:", r.json())
 
-    # Get the bench info
-    response = requests.get(url + info_api_endpoint)
-    print(response.text)
+if __name__ == "__main__":
+    main()
 
-    # Add an SLM
-    slm_params = {
-                    'slm_name': 'slm1',
-                    'slm_host': '10.10.81.1',}
-    add_slm_api_endpoint = "/add_slm"
-    response = requests.post(url + add_slm_api_endpoint, json=slm_params)
-    print(response.text)
-
-    # Get the bench info
-    response = requests.get(url + info_api_endpoint)
-    print(response.text)
-    # Remove the camera
-    camera_params = {
-                    'camera_name': 'thorlabs_cc215mu',}
-    remove_camera_api_endpoint = "/remove_camera"
-    response = requests.post(url + remove_camera_api_endpoint, json=camera_params)
-    print(response.text)
-
-    # Get the bench info
-    response = requests.get(url + info_api_endpoint)
-    print(response.text)
-
-
-    # Update the slm with an image
-    image = np.random.rand(500,500)
-    image = (image * 255).astype(np.uint8)
-    image = Image.fromarray(image)
-    buffered = BytesIO()
-    image.save(buffered, format="PNG")
-    buffered.seek(0)
-
-    files = {'image': ('image.png', buffered, 'image/png')}
-    payload = {'slm_name': 'slm0'}
-    update_slm_api_endpoint = "/update_slm"
-    response = requests.post(url + update_slm_api_endpoint, files=files, data=payload)
-    print(response.text)
-
-
-    # Remove the SLM
-    slm_params = {
-                    'slm_name': 'slm0',}
-    remove_slm_api_endpoint = "/remove_slm"
-    response = requests.post(url + remove_slm_api_endpoint, json=slm_params)
-    print(response.text)
-
-    # Get the bench info
-    response = requests.get(url + info_api_endpoint)
-    print(response.text)
-
-    # Remove the SLM
-    slm_params = {
-                    'slm_name': 'slm1',}
-    remove_slm_api_endpoint = "/remove_slm"
-    response = requests.post(url + remove_slm_api_endpoint, json=slm_params)
-    print(response.text)
-
-    # Get the bench info
-    response = requests.get(url + info_api_endpoint)
-    print(response.text)
