@@ -6,7 +6,7 @@ train: True
 model_id: 'early_testing'
 model: 'cooperative_remote_sim2real'
 torch_home: '~/.cache/torch/'
-resume_training: True
+resume_training: False
 
 #--------------------------------
 #       Co-op Training Params
@@ -17,7 +17,7 @@ accelerator: 'gpu'
 gpu_config: [True, [0]]
 valid_rate: 1
 classifier_image: 'bench' # bench, sim, ideal
-learning_rate: 1.e-4
+learning_rate: 1.e-6
 
 alpha: 0.0
 beta: 0.0
@@ -195,7 +195,7 @@ wavefront_transform:
 # Bench flask server params
 # --------------------------------
 # Bench server URL and endpoints
-bench_server_url: 'http://128.206.20.44:10001'
+bench_server_url: 'http://128.206.20.44:8000'
 add_slm_endpoint: '/add_slm'
 add_camera_endpoint: '/add_camera'
 remove_slm_endpoint: '/remove_slm'

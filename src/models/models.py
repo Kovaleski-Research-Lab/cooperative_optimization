@@ -521,7 +521,7 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         self.upload_benign_image(which=0)
         self.send_to_slm(lens_phase, which=1)
         time.sleep(1)
-        return self.get_bench_image().double()
+        return self.get_bench_image()
 
     def get_bench_image(self):
         # Get an image from the camera
@@ -536,7 +536,7 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         img_bytes_decoded = base64.b64decode(img_data)
         image = BytesIO(img_bytes_decoded)
         image = np.load(image)
-        image = torch.from_numpy(image).double()
+        image = torch.from_numpy(image).double().cuda()
         return image
 
     #-----------------------------------------
@@ -551,10 +551,16 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
             return phases
 
         # Phase wrap - [0, 2pi]
-        phases = phases % (2 * torch.pi)
+        #phases = phases % (2 * torch.pi)
+
+        ## Convert to [0, 1]
+        #phases = phases / (2 * torch.pi)
+        
+        # Phase wrap - [-pi, pi]
+        phases = torch.exp(1j * phases).angle()
 
         # Convert to [0, 1]
-        phases = phases / (2 * torch.pi)
+        phases = (phases + torch.pi) / (2 * torch.pi)
 
         # Invert
         phases = torch.abs(1-phases)
@@ -635,6 +641,7 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
             self.upload_benign_image(which=0)
             self.upload_benign_image(which=1)
             raise ValueError("Image saturated")
+        from IPython import embed; embed()
         image = torch.abs(image - self.background_image)
         return image, lens_phase
 
@@ -910,7 +917,7 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
         self.upload_benign_image(which=0)
         self.send_to_slm(lens_phase, which=1)
         time.sleep(0.5)
-        return self.get_bench_image().double()
+        return self.get_bench_image()
 
     def get_bench_image(self):
         # Get an image from the camera
@@ -925,7 +932,7 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
         img_bytes_decoded = base64.b64decode(img_data)
         image = BytesIO(img_bytes_decoded)
         image = np.load(image)
-        image = torch.from_numpy(image).double()
+        image = torch.from_numpy(image).double().cuda()
         return image
 
     #-----------------------------------------
@@ -940,10 +947,16 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
             return phases
 
         # Phase wrap - [0, 2pi]
-        phases = phases % (2 * torch.pi)
+        #phases = phases % (2 * torch.pi)
+
+        ## Convert to [0, 1]
+        #phases = phases / (2 * torch.pi)
+
+        # Phase wrap - [-pi, pi]
+        phases = torch.exp(1j*phases).angle()
 
         # Convert to [0, 1]
-        phases = phases / (2 * torch.pi)
+        phases = (phases + torch.pi) / (2 * torch.pi)
 
         # Invert
         phases = torch.abs(1-phases)
