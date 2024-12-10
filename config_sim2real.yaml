@@ -21,7 +21,7 @@ learning_rate: 3.e-1
 #--------------------------------
 paths: &id001
   path_root:
-  path_data: 'data/sim2real'
+  path_data: 'data/baseline'
   path_train: 'train/'
   path_valid: 'valid/'
   path_results: 'results/'
