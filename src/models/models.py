@@ -757,7 +757,7 @@ class Sim2Real(pl.LightningModule):
     def objective(self, sim_wavefront, batch):
         sim_image = sim_wavefront.abs()**2
         bench_image = batch[1]
-        loss = torch.nn.functional.mse_loss(sim_image, bench_image)
+        loss = torch.nn.functional.mse_loss(sim_image.squeeze(), bench_image.squeeze())
         return loss
 
     def forward(self, u:torch.Tensor):
@@ -766,6 +766,10 @@ class Sim2Real(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         sample, bench_image = batch
+        # Make sure in [1,1,H,W]
+        sample = sample.view(1, 1, sample.shape[-2], sample.shape[-1])
+        bench_image = bench_image.view(1, 1, bench_image.shape[-2], bench_image.shape[-1])
+
         output = self.forward(sample)
         loss = self.objective(output, batch)
         self.log('loss_train', loss, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
