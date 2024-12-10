@@ -65,7 +65,7 @@ def run(params):
     os.makedirs(lens_phase_dir, exist_ok=True)
 
     # Initialize the model
-    model = models.select_model(params)
+    model = models.select_new_model(params)
 
     # Initialize the datamodel
     dm = datamodule.select_data(params)
