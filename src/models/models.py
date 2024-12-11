@@ -641,7 +641,6 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
             self.upload_benign_image(which=0)
             self.upload_benign_image(which=1)
             raise ValueError("Image saturated")
-        from IPython import embed; embed()
         image = torch.abs(image - self.background_image)
         return image, lens_phase
 

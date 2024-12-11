@@ -1,0 +1,175 @@
+#--------------------------------
+#       General Params
+#--------------------------------
+seed: [True, 1337]
+train: True
+model_id: 'early_testing'
+model: 'cooperative_remote'
+torch_home: '~/.cache/torch/'
+resume_training: False
+
+#--------------------------------
+#       Co-op Training Params
+#--------------------------------
+batch_size: 1
+num_epochs: 20
+accelerator: 'gpu' 
+gpu_config: [True, [0]]
+valid_rate: 1
+classifier_image: 'bench' # bench, sim, ideal
+learning_rate: 1.e-6
+
+alpha: 0.0
+beta: 0.0
+gamma: 0.0
+delta: 1.0
+
+#--------------------------------
+#       All paths
+#--------------------------------
+paths: &id001
+  path_root:
+  path_data: 'data/'
+  path_train: 'train/'
+  path_valid: 'valid/'
+  path_results: 'results/'
+  path_checkpoints: 'checkpoints/'
+  path_images: 'images/'
+  path_logs: 'logs/'
+  path_lens_phase: 'lens_phase/'
+
+#--------------------------------
+#       Classifier
+#--------------------------------
+classifier:
+  num_classes: 10
+  architecture: 'resnet18'
+  learning_rate: 1.e-3
+  transfer_learn: False
+  freeze_backbone: True
+  freeze_linear: True
+  load_checkpoint: True
+  checkpoint_path: 'results/classifier_baseline_bench_bench_image/version_6/checkpoints/last.ckpt'
+
+#--------------------------------
+#       DOM params
+#--------------------------------
+wavelength: &wavelength 520.e-6
+
+planes:
+  0: &idpl00
+    name: 'input_plane'
+    center: [0,0,0]
+    size: [8.64, 15.36]
+    normal: [0,0,1]
+    Nx: &input_x 1080
+    Ny: &input_y 1920
+  1: &idpl01
+    name: 'lens_plane'
+    center: [0,0,762]
+    size: [8.64, 15.36]
+    normal: [0,0,1]
+    Nx: 1080
+    Ny: 1920
+  1: &idpl02
+    name: 'output_plane'
+    center: [0,0, 1219.2]
+    size: [5.4432, 9.6768]
+    normal: [0,0,1]
+    Nx: 1080
+    Ny: 1920
+
+modulators:
+  0: &idm00
+    gradients : 'none'
+    amplitude_init : 'uniform'
+    amplitude_value: 1.0
+    pinhole_size: 'none'
+    phase_init : 'uniform'
+    phase_value: 0.0
+    focal_length: 'none'
+    wavelength: *wavelength 
+  1: &idm01
+    gradients : 'phase_only'
+    amplitude_init : 'uniform'
+    amplitude_value : 1.0
+    pinhole_size: 0.0
+    phase_init : 'lens_phase'
+    phase_value : 0.0
+    focal_length: 257.175
+    wavelength: *wavelength
+
+propagator: &idprop
+  wavelength: *wavelength
+  fft_type: 'auto'
+  prop_type: 'rsc'
+  padded : True
+
+diffraction_blocks:
+  0:
+    input_plane : *idpl00
+    output_plane : *idpl01
+    modulator_params : *idm00
+    propagator_params : *idprop
+  1:
+    input_plane : *idpl01
+    output_plane : *idpl02
+    modulator_params : *idm01
+    propagator_params : *idprop
+
+dom_training:
+  optimizer: 'ADAM'
+  learning_rate: 3.e-1
+  transfer_learn: False
+  load_checkpoint: False
+  objective_function: 'mse'
+
+#--------------------------------
+#       SLM params
+#--------------------------------
+slms:
+  0: 
+    name: 'Holoeye_Pluto21_object'
+    host: '10.10.80.1'
+  1:
+    name: 'Holoeye_Pluto21_lens'
+    host: '10.10.81.1'
+
+slm_options: ['wl=520', '-fx', '-q']
+
+#--------------------------------s
+#       Camera params
+#--------------------------------
+camera_name: 'THORLABS_CC215MU'
+camera_exposure_time: 100000 # in microseconds
+
+#--------------------------------
+#       Datamodule Params
+#--------------------------------
+which: 'MNIST' #MNIST, baseline_bench, sim2real
+train_percent: 0.8
+n_cpus: 16
+resize_row: 720
+resize_col: 720
+data_split: 'data_split_00100.pt'
+which_data: 'bench_image' # Used for baseline_bench, 'sim_output', 'bench_image', 'resampled_sample'
+Nxp: *input_x
+Nyp: *input_y
+  #shift_x: 200
+  #shift_y: 0
+
+wavefront_transform:
+  phase_initialization_strategy: 0
+
+#--------------------------------
+# Bench flask server params
+# --------------------------------
+# Bench server URL and endpoints
+bench_server_url: 'http://128.206.20.44:8000'
+add_slm_endpoint: '/add_slm'
+add_camera_endpoint: '/add_camera'
+remove_slm_endpoint: '/remove_slm'
+remove_camera_endpoint: '/remove_camera'
+update_slm_endpoint: '/update_slm'
+get_camera_image_endpoint: '/get_camera_image'
+reset_bench_endpoint: '/reset_bench'
