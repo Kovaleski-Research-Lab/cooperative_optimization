@@ -18,6 +18,7 @@ spec:
       containers:
       - name: coop-sim2real
         image: kovaleskilab/coop:v1
+        imagePullPolicy: Always
         workingDir: /develop/code/cooperative_optimization
         command: ["/bin/bash", "-c"]
         args: ["git pull && python train_sim2real.py"]
