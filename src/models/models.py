@@ -24,6 +24,10 @@ sys.path.append('/develop/code/cooperative_optimization')
 from diffractive_optical_model.diffractive_optical_model import DOM
 from src.utils.spatial_resample import spatial_resample
 
+MAX_RETRIES = 10
+RETRY_DELAY = 1
+
+
 #-----------------------------------------
 # Initialize: Classifier
 #-----------------------------------------
@@ -524,20 +528,32 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         return self.get_bench_image()
 
     def get_bench_image(self):
-        # Get an image from the camera
-        response = requests.get(self.bench_server_url + self.get_camera_image_endpoint, params={'camera_name': self.camera['camera_name']})
-        response.raise_for_status()
-        response = response.json()
-
-        if "image_data" not in response:
-            raise ValueError("No image data in response")
-
-        img_data = response['image_data']
-        img_bytes_decoded = base64.b64decode(img_data)
-        image = BytesIO(img_bytes_decoded)
-        image = np.load(image)
-        image = torch.from_numpy(image).double().cuda()
-        return image
+        for attempt in range(MAX_RETRIES):
+            try:
+                response = requests.get(self.bench_server_url + self.get_camera_image_endpoint, params={'camera_name': self.camera['camera_name']})
+                response.raise_for_status()
+                response = response.json()
+                if "image_data" not in response:
+                    raise ValueError("No image data in response")
+                img_data = response['image_data']
+                img_bytes_decoded = base64.b64decode(img_data)
+                image = BytesIO(img_bytes_decoded)
+                image = np.load(image)
+                image = torch.from_numpy(image).double().cuda()
+                return image
+            except requests.exceptions.RequestException as e:
+                logger.warning(f"Error getting camera image: {e}")
+                logger.warning(f"Attempt {attempt+1} of {MAX_RETRIES}")
+                logger.warning(f"Retrying in {RETRY_DELAY * (attempt+1)} seconds")
+                time.sleep(RETRY_DELAY * (attempt+1))
+                continue
+            except Exception as e:
+                logger.warning(f"Error getting camera image: {e}")
+                logger.warning(f"Attempt {attempt+1} of {MAX_RETRIES}")
+                logger.warning(f"Retrying in {RETRY_DELAY * (attempt+1)} seconds")
+                time.sleep(RETRY_DELAY * (attempt+1))
+                continue
+        raise ValueError("Error getting camera image")
 
     #-----------------------------------------
     # Initialize: Optical model utilities

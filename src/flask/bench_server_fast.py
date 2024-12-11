@@ -7,6 +7,8 @@ from PIL import Image
 import os
 import base64
 import numpy as np
+import time
+import logging
 
 # Update these paths as needed or restructure the project to avoid this approach
 sys.path.append('/home/mblgh6/Documents/research')
@@ -15,6 +17,7 @@ sys.path.append('/home/mblgh6/Documents/research/cooperative_optimization')
 
 from optics_benchtop import holoeye_pluto21
 from optics_benchtop import thorlabs_cc215mu
+
 
 # Whitelisted IPs
 WHITELISTED_IPS = [
@@ -26,6 +29,9 @@ WHITELISTED_IPS = [
     '128.206.20.59'
 ]
 
+# Get camera image timeout
+TIMEOUT = 5
+
 class SLM(BaseModel):
     slm_name: str
     slm_host: str
@@ -33,6 +39,9 @@ class SLM(BaseModel):
 class Camera(BaseModel):
     camera_name: str
     camera_exposure_time: int
+
+
+logging.basicConfig(level=logging.INFO)
 
 slms = {}
 cameras = {}
@@ -45,6 +54,13 @@ async def validate_ip(request: Request, call_next):
     if ip not in WHITELISTED_IPS:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"IP {ip} is not allowed to access this resource.")
     return await call_next(request)
+
+@app.middleware('http')
+async def log_requests(request: Request, call_next):
+    logging.info(f"Received request from {request.client.host} for {request.url}")
+    response = await call_next(request)
+    logging.info(f"Response: {response.status_code}")
+    return response
 
 @app.post('/add_slm')
 def add_slm(slm: SLM):
@@ -126,11 +142,15 @@ def get_camera_image(camera_name: str):
 
     try:
         image = None
+        # Issue a software trigger to the camera
         cameras[camera_name].camera.issue_software_trigger()
+
+        start_time = time.time()
         while image is None:
             # Get the image in a PIL-friendly format for easy encoding
             image = cameras[camera_name].get_image(pil_image=True, eight_bit=True)
-
+            if time.time() - start_time > TIMEOUT:
+                raise HTTPException(status_code=500, detail="Timeout occurred while waiting for camera image")
 
         # Convert the PIL image to bytes
         buffer = BytesIO()
