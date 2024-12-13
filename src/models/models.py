@@ -18,7 +18,7 @@ from torchvision.models import ResNet18_Weights, ResNet34_Weights, ResNet50_Weig
 
 #sys.path.append('/home/mblgh6/Documents/optics_benchtop')
 sys.path.append('/develop/code/cooperative_optimization')
-#sys.path.append('/home/mblgh6/Documents/cooperative_optimization')
+sys.path.append('/home/mblgh6/Documents/cooperative_optimization')
 #import holoeye_pluto21
 #import thorlabs_cc215mu
 from diffractive_optical_model.diffractive_optical_model import DOM
@@ -421,15 +421,19 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         self.scaled_plane = self.dom.layers[0].input_plane.scale(0.6, inplace=False)
 
         if self.params['classifier']['load_checkpoint']:
+            logger.info("Loading classifier from checkpoint")
             self.classifier = Classifier.load_from_checkpoint(os.path.join(self.paths['path_root'], self.params['classifier']['checkpoint_path']), strict=False).double()
             if self.params['classifier']['freeze_backbone']:
+                logger.info("Freezing backbone")
                 for p in self.classifier.feature_extractor.parameters():
                     p.requires_grad = False
 
             if self.params['classifier']['freeze_linear']:
+                logger.info("Freezing linear")
                 for p in self.classifier.classifier.parameters():
                     p.requires_grad = False
         else:
+            logger.info("Initializing classifier")
             self.classifier = Classifier(params).double()
 
         self.register_buffer('background_image', self.get_background_image())
