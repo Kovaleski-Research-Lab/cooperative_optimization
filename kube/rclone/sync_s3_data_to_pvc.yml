@@ -1,3 +1,4 @@
+
 # batch/v1 tells it to use the JOB API
 apiVersion: batch/v1
 # we are running a Job, not a Pod
@@ -5,7 +6,7 @@ kind: Job
 
 # set the name of the job
 metadata:
-  name: sync-pvc-from-s3
+  name: sync-s3-data-to-pvc
 
 spec:
   # how many times should the system
@@ -22,7 +23,7 @@ spec:
           # the image: can be from any pubic facing registry
           image: rclone/rclone
           # the working dir when the container starts
-          workingDir: /develop/results
+          workingDir: /develop/data
           # should Kube pull it
           imagePullPolicy: IfNotPresent
           # environment
@@ -46,8 +47,8 @@ spec:
               "--copy-links",
               "--auto-confirm",
               "--transfers=16",
-              "nautilus:coop-results/flat_field/",
-              "/develop/data/flat_field/",
+              "nautilus:coop-data",
+              "/develop/data/",
             ]
           # define the resources for this container
           resources:

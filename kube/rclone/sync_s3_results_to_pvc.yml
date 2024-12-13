@@ -1,0 +1,68 @@
+apiVersion: batch/v1
+# we are running a Job, not a Pod
+kind: Job
+
+# set the name of the job
+metadata:
+  name: sync-s3-results-to-pvc
+
+spec:
+  # how many times should the system
+  # retry before calling it a failure
+  backoffLimit: 0
+  template:
+    spec:
+      # should we restart on failure
+      restartPolicy: Never
+      # what containers will we need
+      containers:
+        # the name of the container
+        - name: rclone-container
+          # the image: can be from any pubic facing registry
+          image: rclone/rclone
+          # the working dir when the container starts
+          workingDir: /develop/results
+          # should Kube pull it
+          imagePullPolicy: IfNotPresent
+          # environment
+          env:
+            - name: RCLONE_CONFIG_NAUTILUS_TYPE
+              value: s3
+            - name: RCLONE_CONFIG_NAUTILUS_ENDPOINT
+              value: http://rook-ceph-rgw-centrals3.rook-central
+            - name: RCLONE_CONFIG_NAUTILUS_PROVIDER
+              value: Other
+            - name: RCLONE_CONFIG_NAUTILUS_ACCESS_KEY_ID
+              value: LQER4SOAEHC8P4H4KG7Q
+            - name: RCLONE_CONFIG_NAUTILUS_SECRET_ACCESS_KEY
+              value: SBloEbbOQO7SgasYdRiSioUeMRnoUVblVATYjtAT
+          # the command to run when the container starts
+          command:
+            [
+              "rclone",
+              "sync",
+              "--progress",
+              "--copy-links",
+              "--auto-confirm",
+              "--transfers=16",
+              "nautilus:coop-results",
+              "/develop/results/",
+            ]
+          # define the resources for this container
+          resources:
+            # limits - the max given to the container
+            limits:
+              memory: 8Gi
+              cpu: 16
+            requests:
+              memory: 8Gi
+              cpu: 16
+          # what volumes should we mount
+          volumeMounts:
+            - mountPath: /develop/results
+              name: coop-results
+      # tell Kube where to find the volumes we want to use
+      volumes:
+        - name: coop-results
+          persistentVolumeClaim:
+            claimName: coop-results
