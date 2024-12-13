@@ -21,7 +21,7 @@ learning_rate: 3.e-1
 #--------------------------------
 paths: &id001
   path_root:
-  path_data: 'data/flat_field'
+  path_data: 'data/'
   path_train: 'train/'
   path_valid: 'valid/'
   path_results: 'results/'
@@ -127,7 +127,7 @@ dom_training:
 #--------------------------------
 #       Datamodule Params
 #--------------------------------
-which: 'sim2real_flat' #MNIST, baseline_bench, sim2real, sim2real_flat
+which: 'MNIST' #MNIST, baseline_bench, sim2real, sim2real_flat
 train_percent: 0.8
 n_cpus: 20
 resize_row: 720
