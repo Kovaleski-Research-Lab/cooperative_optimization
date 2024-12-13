@@ -127,7 +127,7 @@ dom_training:
 #--------------------------------
 #       Datamodule Params
 #--------------------------------
-which: 'baseline_bench' #MNIST, baseline_bench, sim2real, sim2real_flat
+which: 'sim2real' #MNIST, baseline_bench, sim2real, sim2real_flat
 train_percent: 0.8
 n_cpus: 20
 resize_row: 720
