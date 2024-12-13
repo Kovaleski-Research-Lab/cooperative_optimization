@@ -18,6 +18,7 @@ spec:
       containers:
       - name: marshall-jupyter-job
         image: kovaleskilab/coop:v1
+        imagePullPolicy: Always
         workingDir: /develop/code/cooperative_optimization
         command: ["/bin/bash", "-c"]
         args: ["git pull && jupyter lab --notebook-dir=/develop --ip 0.0.0.0 --port 8888 --no-browser --allow-root"]
