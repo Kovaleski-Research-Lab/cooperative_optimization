@@ -184,7 +184,7 @@ if __name__ == "__main__":
 
     pl.seed_everything(123)
     # Experiment path
-    versions = ['version_7']
+    versions = ['version_0, version_1']
     for version in versions:
         path_experiment = '/develop/results/sim2real/' + version
         path_checkpoint = os.path.join(path_experiment, 'checkpoints', 'last.ckpt')
@@ -199,7 +199,7 @@ if __name__ == "__main__":
         # I don't have a good datamodule for this eval, so we will load the images
         # manually.
         #path_data = os.path.join(config['paths']['path_root'], config['paths']['path_data'])
-        path_data = os.path.join('/develop/data/sim2real')
+        path_data = os.path.join('/develop/data/baseline')
         files = os.listdir(path_data)
         files.sort()
         train_files = [os.path.join(path_data, f) for f in files if 'train' in f]
