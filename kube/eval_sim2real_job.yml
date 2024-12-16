@@ -8,6 +8,7 @@ spec:
       containers:
       - name: marshall-eval-sim2real
         image: kovaleskilab/coop:v1
+        imagePullPolicy: Always
         workingDir: /develop/code/cooperative_optimization
         command: ["/bin/bash", "-c"]
         args: ["git pull && python /develop/code/cooperative_optimization/src/evaluation/eval_sim2real.py"]
