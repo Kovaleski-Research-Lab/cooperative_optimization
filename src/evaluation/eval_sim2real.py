@@ -176,6 +176,14 @@ def run_model(model, data_files, save=False, path_save=None):
             split = file.split('/')[-1]
             split = split.split('_')
             split[0] = 'sim2real'
+            if 'train' in file:
+                temp = split[-1]
+                split[1] = 'train'
+                split.append(temp)
+            elif 'valid' in file:
+                temp = split[-1]
+                split[1] = 'valid'
+                split.append(temp)
             split = '_'.join(split)
             data = {'resampled_sample': sample, 'bench_image': bench_image, 'sim2real_output': sim_output, 'sim_output': original_sim_output, 'target': target}
             torch.save(data, os.path.join(path_save, split))
