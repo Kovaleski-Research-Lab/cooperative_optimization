@@ -654,15 +654,15 @@ def plot_feature_space(train_feature_vectors, valid_feature_vectors, train_predi
         plt.close('all')
 
 if __name__ == "__main__":
-    checkpoint_paths = ['/develop/results/classifier_baseline_bench_resampled_sample/version_5/',
-                        '/develop/results/classifier_baseline_bench_resampled_sample/version_6/',
-                        '/develop/results/classifier_baseline_bench_resampled_sample/version_7/',
-                        '/develop/results/classifier_baseline_bench_sim_output/version_5/',
-                        '/develop/results/classifier_baseline_bench_sim_output/version_6/',
-                        '/develop/results/classifier_baseline_bench_sim_output/version_7/',
-                        '/develop/results/classifier_baseline_bench_bench_image/version_5/',
-                        '/develop/results/classifier_baseline_bench_bench_image/version_6/',
-                        '/develop/results/classifier_baseline_bench_bench_image/version_7/']
+    checkpoint_paths = ['/develop/results/classifier_baseline_bench_resampled_sample/version_0/',
+                        '/develop/results/classifier_baseline_bench_resampled_sample/version_1/',
+                        '/develop/results/classifier_baseline_bench_resampled_sample/version_2/',
+                        '/develop/results/classifier_baseline_bench_sim_output/version_0/',
+                        '/develop/results/classifier_baseline_bench_sim_output/version_1/',
+                        '/develop/results/classifier_baseline_bench_sim_output/version_2/',
+                        '/develop/results/classifier_baseline_bench_bench_image/version_0/',
+                        '/develop/results/classifier_baseline_bench_bench_image/version_1/',
+                        '/develop/results/classifier_baseline_bench_bench_image/version_2/']
 
     ## Load the images
     train_images, valid_images, train_labels, valid_labels = load_images('/develop/data/baseline/')
@@ -712,5 +712,5 @@ if __name__ == "__main__":
 
         # Calculate F1 scores
         f1_scores = calculate_f1_scores(train_predictions, valid_predictions)
-        torch.save(f1_scores, os.path.join(path_classifier_eval, 'f1_scores.pt'))
+        torch.save(f1_scores, os.path.join(path_classifier_eval, 'f1_scores_baseline.pt'))
 
