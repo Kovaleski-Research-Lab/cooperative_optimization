@@ -192,7 +192,7 @@ if __name__ == "__main__":
 
     pl.seed_everything(123)
     # Experiment path
-    versions = ['version_0', 'version_1']
+    versions = ['version_2']
     for version in versions:
         path_experiment = '/develop/results/sim2real/' + version
         path_checkpoint = os.path.join(path_experiment, 'checkpoints', 'last.ckpt')
