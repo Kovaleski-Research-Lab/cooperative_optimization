@@ -49,14 +49,14 @@ classifier:
   freeze_backbone: True
   freeze_linear: True
   load_checkpoint: True
-  checkpoint_path: 'results/classifier_baseline_bench_bench_image/version_6/checkpoints/last.ckpt'
+  checkpoint_path: 'results/classifier_baseline_bench_bench_image/version_2/checkpoints/last.ckpt'
 
 #--------------------------------
 #       Sim2Real params
 #--------------------------------
 sim2real:
   load_checkpoint: True
-  checkpoint_path: 'results/sim2real/version_4/checkpoints/last.ckpt'
+  checkpoint_path: 'results/sim2real/version_1/checkpoints/last.ckpt'
   freeze_calibration_layer: True
 
 #--------------------------------

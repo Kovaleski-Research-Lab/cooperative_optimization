@@ -1,6 +1,6 @@
 # Going to evaluate the classifier (trained on in-focus bench images) on 
 # out-of-focus bench images. Going to sweep the focal length of the lens
-# between +- 10% of the ideal focal length. At each focal length, we run the 
+# between +- 5% of the ideal focal length. At each focal length, we run the 
 # dataset and save model predictions / ideal targets.
 # The goal here is to find the 'line in the sand' on where the classifier
 # starts to fail.
@@ -28,7 +28,7 @@ if __name__ == "__main__":
     config['paths']['path_root'] = path_root
 
     # Ideal focal length
-    ideal_focal_length = 287.75
+    ideal_focal_length = 285.75
 
     # Focal length sweep
     focal_length_sweep = np.linspace(ideal_focal_length*0.95, ideal_focal_length*1.05, 20)
