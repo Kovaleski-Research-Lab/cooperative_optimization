@@ -13,6 +13,7 @@ import pytorch_lightning as pl
 import matplotlib.pyplot as plt
 from torchvision.models import resnet18, resnet34, resnet50
 from torchmetrics import F1Score, Accuracy, Precision, Recall, ConfusionMatrix
+from torchmetrics.functional import peak_signal_noise_ratio as psnr
 from torchvision.models import ResNet18_Weights, ResNet34_Weights, ResNet50_Weights
 
 
@@ -776,7 +777,9 @@ class Sim2Real(pl.LightningModule):
     def objective(self, sim_wavefront, batch):
         sim_image = sim_wavefront.abs()**2
         bench_image = batch[1]
-        loss = torch.nn.functional.mse_loss(sim_image.squeeze(), bench_image.squeeze())
+        #loss = torch.nn.functional.mse_loss(sim_image.squeeze(), bench_image.squeeze())
+        loss = psnr(sim_image.squeeze(), bench_image.squeeze())
+        loss = 1 / loss
         return loss
 
     def forward(self, u:torch.Tensor):
