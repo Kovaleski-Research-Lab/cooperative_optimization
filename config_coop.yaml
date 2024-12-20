@@ -49,7 +49,7 @@ classifier:
   freeze_backbone: True
   freeze_linear: True
   load_checkpoint: True
-  checkpoint_path: 'results/classifier_baseline_bench_bench_image/version_6/checkpoints/last.ckpt'
+  checkpoint_path: 'results/classifier_baseline_bench_bench_image/version_1/checkpoints/last.ckpt'
 
 #--------------------------------
 #       DOM params
