@@ -15,6 +15,7 @@ from torchvision.models import resnet18, resnet34, resnet50
 from torchmetrics import F1Score, Accuracy, Precision, Recall, ConfusionMatrix
 from torchmetrics.functional import peak_signal_noise_ratio as psnr
 from torchvision.models import ResNet18_Weights, ResNet34_Weights, ResNet50_Weights
+import torchvision
 
 
 #sys.path.append('/home/mblgh6/Documents/optics_benchtop')
@@ -770,6 +771,7 @@ class Sim2Real(pl.LightningModule):
         self.params = params
         self.paths = params['paths']
         self.dom = DOM(params)
+        self.crop = torchvision.transforms.CenterCrop((1080, 1080))
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.params['learning_rate'])
@@ -777,9 +779,11 @@ class Sim2Real(pl.LightningModule):
     def objective(self, sim_wavefront, batch):
         sim_image = sim_wavefront.abs()**2
         bench_image = batch[1]
-        loss = torch.nn.functional.mse_loss(sim_image.squeeze(), bench_image.squeeze())
-        #loss = psnr(sim_image.squeeze(), bench_image.squeeze())
-        #loss = 1 / loss
+        sim_image = self.crop(sim_image)
+        bench_image = self.crop(bench_image)
+        #loss = torch.nn.functional.mse_loss(sim_image.squeeze(), bench_image.squeeze())
+        loss = psnr(sim_image.squeeze(), bench_image.squeeze())
+        loss = 1 / loss
         return loss
 
     def forward(self, u:torch.Tensor):
