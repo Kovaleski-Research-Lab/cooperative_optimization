@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: coop-sim2real
+  name: marshall-coop-sim2real
 spec:
   template:
     spec:

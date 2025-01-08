@@ -11,10 +11,10 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
-                - key: topology.kubernetes.io/region
+                - key: nvidia.com/gpu.product
                   operator: In
                   values:
-                    - us-central
+                  - NVIDIA-GeForce-RTX-3090
       containers:
       - name: marshall-jupyter-job
         image: kovaleskilab/coop:v1
@@ -33,11 +33,11 @@ spec:
             limits:
               memory: 120Gi
               cpu: 16
-              nvidia.com/a100: 1
+              nvidia.com/gpu: 1
             requests:
               memory: 120Gi
               cpu: 16
-              nvidia.com/a100: 1
+              nvidia.com/gpu: 1
       volumes:
       - name: coop-data
         persistentVolumeClaim:
