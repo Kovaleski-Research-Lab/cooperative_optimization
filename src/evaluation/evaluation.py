@@ -654,16 +654,16 @@ def plot_feature_space(train_feature_vectors, valid_feature_vectors, train_predi
         plt.close('all')
 
 if __name__ == "__main__":
-    #checkpoint_paths = ['/develop/results/classifier_baseline_bench_resampled_sample/version_0/',
-    #                    '/develop/results/classifier_baseline_bench_resampled_sample/version_1/',
-    #                    '/develop/results/classifier_baseline_bench_resampled_sample/version_2/',
-    #                    '/develop/results/classifier_baseline_bench_sim_output/version_0/',
-    #                    '/develop/results/classifier_baseline_bench_sim_output/version_1/',
-    #                    '/develop/results/classifier_baseline_bench_sim_output/version_2/',
-    #                    '/develop/results/classifier_baseline_bench_bench_image/version_0/',
-    #                    '/develop/results/classifier_baseline_bench_bench_image/version_1/',
-    #                    '/develop/results/classifier_baseline_bench_bench_image/version_2/']
-    checkpoint_paths = ['/home/mblgh6/Documents/cooperative_optimization/results/classifier_baseline_bench_bench_image/version_4/',]
+    #checkpoint_paths = ['/home/mblgh6/Documents/cooperative_optimization/results/classifier_baseline_bench_bench_image/version_4/',]
+    checkpoint_paths = ['/develop/results/classifier_baseline_bench_resampled_sample/version_3/',
+                        '/develop/results/classifier_baseline_bench_resampled_sample/version_4/',
+                        '/develop/results/classifier_baseline_bench_resampled_sample/version_5/',
+                        '/develop/results/classifier_baseline_bench_sim_output/version_3/',
+                        '/develop/results/classifier_baseline_bench_sim_output/version_4/',
+                        '/develop/results/classifier_baseline_bench_sim_output/version_5/',
+                        '/develop/results/classifier_baseline_bench_bench_image/version_3/',
+                        '/develop/results/classifier_baseline_bench_bench_image/version_4/',
+                        '/develop/results/classifier_baseline_bench_bench_image/version_5/']
 
     ## Load the images
     train_images, valid_images, train_labels, valid_labels = load_images('/home/mblgh6/Documents/cooperative_optimization/data/baseline/')
