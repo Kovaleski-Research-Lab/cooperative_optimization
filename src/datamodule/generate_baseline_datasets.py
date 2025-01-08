@@ -28,32 +28,33 @@ if __name__ == "__main__":
     path_data_baseline = os.path.join(params['paths']['path_root'], 'data', 'baseline')
     os.makedirs(path_data_baseline, exist_ok=True)
 
-    for i,batch in enumerate(tqdm(train_dataloader)):
-        sample, slm_sample, target = batch
-        sim_output = model.dom_forward(sample.cuda())
-        bench_image, lens_phase = model.bench_forward(slm_sample)
-        resampled_sample = spatial_resample(scaled_plane, sample.abs(), model.dom.layers[1].output_plane).squeeze()
-        bench_image = bench_image.squeeze().abs().cpu()
-        sim_output = sim_output['images'].squeeze().cpu().detach()
-        new_images = {
-                      'resampled_sample': resampled_sample,
-                      'bench_image': bench_image, 
-                      'sim_output': sim_output,
-                      'target': target}
-                
-        torch.save(new_images, os.path.join(path_data_baseline, f'train_{i:04d}.pt'))
+    with torch.no_grad():
+        for i,batch in enumerate(tqdm(train_dataloader)):
+            sample, slm_sample, target = batch
+            sim_output = model.dom_forward(sample.cuda())
+            bench_image, lens_phase = model.bench_forward(slm_sample)
+            resampled_sample = spatial_resample(scaled_plane, sample.abs(), model.dom.layers[1].output_plane).squeeze()
+            bench_image = bench_image.squeeze().abs().cpu()
+            sim_output = sim_output['images'].squeeze().cpu().detach()
+            new_images = {
+                          'resampled_sample': resampled_sample,
+                          'bench_image': bench_image, 
+                          'sim_output': sim_output,
+                          'target': target}
+                    
+            torch.save(new_images, os.path.join(path_data_baseline, f'train_{i:04d}.pt'))
 
-    for i,batch in enumerate(tqdm(valid_dataloader)):
-        sample, slm_sample, target = batch
-        sim_output = model.dom_forward(sample.cuda())
-        bench_image, lens_phase = model.bench_forward(slm_sample)
-        resampled_sample = spatial_resample(scaled_plane, sample.abs(), model.dom.layers[1].output_plane).squeeze()
-        bench_image = bench_image.squeeze().abs().cpu()
-        sim_output = sim_output['images'].squeeze().cpu().detach()
-        new_images = {
-                      'resampled_sample': resampled_sample,
-                      'bench_image': bench_image, 
-                      'sim_output': sim_output,
-                      'target': target}
-                
-        torch.save(new_images, os.path.join(path_data_baseline, f'valid_{i:04d}.pt'))
+        for i,batch in enumerate(tqdm(valid_dataloader)):
+            sample, slm_sample, target = batch
+            sim_output = model.dom_forward(sample.cuda())
+            bench_image, lens_phase = model.bench_forward(slm_sample)
+            resampled_sample = spatial_resample(scaled_plane, sample.abs(), model.dom.layers[1].output_plane).squeeze()
+            bench_image = bench_image.squeeze().abs().cpu()
+            sim_output = sim_output['images'].squeeze().cpu().detach()
+            new_images = {
+                          'resampled_sample': resampled_sample,
+                          'bench_image': bench_image, 
+                          'sim_output': sim_output,
+                          'target': target}
+                    
+            torch.save(new_images, os.path.join(path_data_baseline, f'valid_{i:04d}.pt'))

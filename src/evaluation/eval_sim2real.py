@@ -13,6 +13,7 @@ from diffractive_optical_model.diffractive_optical_model import DOM
 
 
 sys.path.append('/develop/code/cooperative_optimization/src')
+sys.path.append('../')
 from datamodule.datamodule import select_data
 from models.models import Sim2Real
 
@@ -192,9 +193,9 @@ if __name__ == "__main__":
 
     pl.seed_everything(123)
     # Experiment path
-    versions = ['version_3']
+    versions = ['version_1', 'version_2', 'version_3']
     for version in versions:
-        path_experiment = '/develop/results/sim2real/' + version
+        path_experiment = '../../results/sim2real/' + version
         path_checkpoint = os.path.join(path_experiment, 'checkpoints', 'last.ckpt')
         path_config = os.path.join(path_experiment, 'config.yaml')
 
@@ -207,7 +208,7 @@ if __name__ == "__main__":
         # I don't have a good datamodule for this eval, so we will load the images
         # manually.
         #path_data = os.path.join(config['paths']['path_root'], config['paths']['path_data'])
-        path_data = os.path.join('/develop/data/baseline')
+        path_data = os.path.join('../../data/baseline')
         files = os.listdir(path_data)
         files.sort()
         train_files = [os.path.join(path_data, f) for f in files if 'train' in f]
@@ -222,6 +223,6 @@ if __name__ == "__main__":
         #plot_differences(model, train_files+valid_files)
 
         # Save the new simulated images
-        os.makedirs(os.path.join('/develop/data/sim2real/' + version), exist_ok=True)
-        run_model(model, train_files+valid_files, save=True, path_save = '/develop/data/sim2real/' + version)
+        os.makedirs(os.path.join('../../data/sim2real/' + version), exist_ok=True)
+        run_model(model, train_files+valid_files, save=True, path_save = '../../data/sim2real/' + version)
 

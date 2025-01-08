@@ -51,6 +51,7 @@ def run(params):
 
     if params['resume_training']:
         version = get_current_version(path_results, name)
+        version = 0
     else:
         version = get_next_version(path_results, name)
 

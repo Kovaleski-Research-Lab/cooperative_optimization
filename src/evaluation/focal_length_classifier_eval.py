@@ -50,7 +50,6 @@ if __name__ == "__main__":
     for i,focal_length in enumerate(tqdm(focal_length_sweep, desc='Focal Length Sweep')):
         config['modulators'][1]['focal_length'] = focal_length
         model = CooperativeOpticalModelRemote(config)
-        model.eval()
         model.cuda()
 
         train_preds = []
@@ -75,15 +74,17 @@ if __name__ == "__main__":
                     target_index = torch.argmax(classifier_target, dim=1).cpu().squeeze().numpy()
                     pred_index = torch.argmax(classifier_output, dim=1).cpu().squeeze().numpy()
 
-                    train_preds.append(pred_index)
-                    train_targets.append(target_index)
+                    train_preds.append(classifier_output)
+                    train_targets.append(classifier_target)
                 except Exception as e:
                     print(e)
                     break
 
         # Compute the train f1 score
-        train_f1 = f1_score(train_targets, train_preds, average='macro')
-        train_f1_scores.append(train_f1)
+        #train_f1 = f1_score(train_targets, train_preds, average='macro')
+        #train_f1_scores.append(train_f1)
+        torch.save(train_preds, f'train_preds_{i}.pt')
+        torch.save(train_targets, f'train_targets_{i}.pt')
 
         valid_preds = []
         valid_targets = []
@@ -107,15 +108,17 @@ if __name__ == "__main__":
                     target_index = torch.argmax(classifier_target, dim=1).cpu().squeeze().numpy()
                     pred_index = torch.argmax(classifier_output, dim=1).cpu().squeeze().numpy()
 
-                    valid_preds.append(pred_index)
-                    valid_targets.append(target_index)
+                    valid_preds.append(classifier_output)
+                    valid_targets.append(classifier_target)
                 except Exception as e:
                     print(e)
                     break
         
         # Compute the valid f1 score
-        valid_f1 = f1_score(valid_targets, valid_preds, average='macro')
-        valid_f1_scores.append(valid_f1)
+        #valid_f1 = f1_score(valid_targets, valid_preds, average='macro')
+        #valid_f1_scores.append(valid_f1)
+        torch.save(valid_preds, f'valid_preds_{i}.pt')
+        torch.save(valid_targets, f'valid_targets_{i}.pt')
 
     model.upload_benign_image(which=0)
     model.upload_benign_image(which=1)
@@ -123,8 +126,8 @@ if __name__ == "__main__":
     # Save the results
     results = {
         'focal_length_sweep': focal_length_sweep,
-        'train_f1_scores': train_f1_scores,
-        'valid_f1_scores': valid_f1_scores,
+        #'train_f1_scores': train_f1_scores,
+        #'valid_f1_scores': valid_f1_scores,
         'valid_images': valid_images
     }
     torch.save(results, 'focal_length_classifier_eval_results.pt')

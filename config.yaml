@@ -15,7 +15,7 @@ num_epochs: 20
 accelerator: 'gpu' 
 gpu_config: [True, [0]]
 valid_rate: 1
-classifier_image: 'ideal' # bench, sim, ideal
+classifier_image: 'bench' # bench, sim, ideal
 learning_rate: 1.e-4
 
 alpha: 1.0

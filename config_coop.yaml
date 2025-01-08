@@ -6,13 +6,13 @@ train: True
 model_id: 'early_testing'
 model: 'cooperative_remote'
 torch_home: '~/.cache/torch/'
-resume_training: False
+resume_training: True
 
 #--------------------------------
 #       Co-op Training Params
 #--------------------------------
 batch_size: 1
-num_epochs: 20
+num_epochs: 30
 accelerator: 'gpu' 
 gpu_config: [True, [0]]
 valid_rate: 1
@@ -49,7 +49,7 @@ classifier:
   freeze_backbone: True
   freeze_linear: True
   load_checkpoint: True
-  checkpoint_path: 'results/classifier_baseline_bench_bench_image/version_1/checkpoints/last.ckpt'
+  checkpoint_path: 'results/classifier_baseline_bench_bench_image/version_4/checkpoints/last.ckpt'
 
 #--------------------------------
 #       DOM params
@@ -71,7 +71,7 @@ planes:
     normal: [0,0,1]
     Nx: 1080
     Ny: 1920
-  1: &idpl02
+  2: &idpl02
     name: 'output_plane'
     center: [0,0, 1219.2]
     size: [5.4432, 9.6768]
@@ -96,7 +96,7 @@ modulators:
     pinhole_size: 0.0
     phase_init : 'lens_phase'
     phase_value : 0.0
-    focal_length: 257.175
+    focal_length: 278.98
     wavelength: *wavelength
 
 propagator: &idprop

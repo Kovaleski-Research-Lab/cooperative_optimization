@@ -23,7 +23,7 @@ from torchmetrics.functional import mean_squared_error as MSE
 from torchmetrics.functional.image import structural_similarity_index_measure as SSIM
 from joblib import Parallel, delayed
 
-sys.path.append('/develop/code/cooperative_optimization/src')
+sys.path.append('/home/mblgh6/Documents/cooperative_optimization/src')
 from datamodule.datamodule import select_data
 from models.models import Classifier
 
@@ -654,18 +654,19 @@ def plot_feature_space(train_feature_vectors, valid_feature_vectors, train_predi
         plt.close('all')
 
 if __name__ == "__main__":
-    checkpoint_paths = ['/develop/results/classifier_baseline_bench_resampled_sample/version_0/',
-                        '/develop/results/classifier_baseline_bench_resampled_sample/version_1/',
-                        '/develop/results/classifier_baseline_bench_resampled_sample/version_2/',
-                        '/develop/results/classifier_baseline_bench_sim_output/version_0/',
-                        '/develop/results/classifier_baseline_bench_sim_output/version_1/',
-                        '/develop/results/classifier_baseline_bench_sim_output/version_2/',
-                        '/develop/results/classifier_baseline_bench_bench_image/version_0/',
-                        '/develop/results/classifier_baseline_bench_bench_image/version_1/',
-                        '/develop/results/classifier_baseline_bench_bench_image/version_2/']
+    #checkpoint_paths = ['/develop/results/classifier_baseline_bench_resampled_sample/version_0/',
+    #                    '/develop/results/classifier_baseline_bench_resampled_sample/version_1/',
+    #                    '/develop/results/classifier_baseline_bench_resampled_sample/version_2/',
+    #                    '/develop/results/classifier_baseline_bench_sim_output/version_0/',
+    #                    '/develop/results/classifier_baseline_bench_sim_output/version_1/',
+    #                    '/develop/results/classifier_baseline_bench_sim_output/version_2/',
+    #                    '/develop/results/classifier_baseline_bench_bench_image/version_0/',
+    #                    '/develop/results/classifier_baseline_bench_bench_image/version_1/',
+    #                    '/develop/results/classifier_baseline_bench_bench_image/version_2/']
+    checkpoint_paths = ['/home/mblgh6/Documents/cooperative_optimization/results/classifier_baseline_bench_bench_image/version_4/',]
 
     ## Load the images
-    train_images, valid_images, train_labels, valid_labels = load_images('/develop/data/baseline/')
+    train_images, valid_images, train_labels, valid_labels = load_images('/home/mblgh6/Documents/cooperative_optimization/data/baseline/')
 
     for checkpoint_path in checkpoint_paths:
         #checkpoint_path = '/devleop/results/classifier_baseline_bench_resampled_sample/version_1/'
