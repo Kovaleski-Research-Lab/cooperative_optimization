@@ -781,9 +781,12 @@ class Sim2Real(pl.LightningModule):
         bench_image = batch[1]
         sim_image = self.crop(sim_image)
         bench_image = self.crop(bench_image)
-        loss = torch.nn.functional.mse_loss(sim_image.squeeze(), bench_image.squeeze())
-        #loss = psnr(sim_image.squeeze(), bench_image.squeeze())
-        #loss = 1 / loss
+        sim_image = sim_image / torch.norm(sim_image)
+        bench_image = bench_image / torch.norm(bench_image)
+
+        #loss = torch.nn.functional.mse_loss(sim_image.squeeze(), bench_image.squeeze())
+        loss = psnr(sim_image.squeeze(), bench_image.squeeze())
+        loss = 1 / loss
         return loss
 
     def forward(self, u:torch.Tensor):
