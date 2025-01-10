@@ -10,7 +10,7 @@ torch_home: '~/.cache/torch/'
 #       Co-op Training Params
 #--------------------------------
 batch_size: 1
-num_epochs: 20
+num_epochs: 30
 accelerator: 'gpu' 
 gpu_config: [True, [0]]
 valid_rate: 1
