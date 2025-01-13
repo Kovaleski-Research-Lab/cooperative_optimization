@@ -66,6 +66,9 @@ def create_cross_pattern(plane, cross_size):
 def spatial_resample(plane0, obj, plane1):
     obj_resampled = resample(plane0, obj, plane1)
     obj_sensor = crop_or_pad(obj_resampled, plane1)
+    mn = torch.min(obj_sensor)
+    mx = torch.max(obj_sensor)
+    obj_sensor = (obj_sensor - mn) / (mx - mn)
     return obj_sensor
 
 
