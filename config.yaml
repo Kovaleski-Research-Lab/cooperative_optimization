@@ -17,6 +17,7 @@ gpu_config: [True, [0]]
 valid_rate: 1
 classifier_image: 'bench' # bench, sim, ideal
 learning_rate: 1.e-4
+crop_normalize_flag: 0
 
 alpha: 1.0
 beta: 1.0
@@ -49,6 +50,7 @@ classifier:
   freeze_linear: False
   load_checkpoint: False
   checkpoint_path: 'results/classifier_baseline_bench_resampled_sample/version_0/checkpoints/last.ckpt'
+  crop_normalize_flag: 0
 
 #--------------------------------
 #       DOM params
@@ -145,7 +147,7 @@ camera_exposure_time: 100000 # in microseconds
 #--------------------------------
 #       Datamodule Params
 #--------------------------------
-which: 'baseline_bench' #MNIST, baseline_bench, sim2real
+which: 'MNIST' #MNIST, baseline_bench, sim2real
 train_percent: 0.8
 n_cpus: 16
 resize_row: 720

@@ -46,6 +46,9 @@ class Classifier(pl.LightningModule):
         self.transfer_learn = self.params['transfer_learn']
         self.freeze_backbone = self.params['freeze_backbone']
         self.freeze_linear = self.params['freeze_linear']
+        self.crop_normalize_flag = self.params['crop_normalize_flag']
+        if self.crop_normalize_flag:
+            self.crop = torchvision.transforms.CenterCrop((1080, 1080))
 
         self.select_model()
 
@@ -57,6 +60,11 @@ class Classifier(pl.LightningModule):
         self.double()
 
         self.save_hyperparameters()
+
+    def crop_normalize(self, image):
+        image = self.crop(image)
+        image = image / torch.norm(image)
+        return image
 
     def select_model(self):
         if self.transfer_learn:
@@ -110,6 +118,8 @@ class Classifier(pl.LightningModule):
 
     def shared_step(self, batch):
         sample, target = batch
+        if self.crop_normalize_flag:
+            sample = self.crop_normalize(sample)
         sample = torch.cat([sample, sample, sample], dim=1)
         prediction = self.forward(sample)
         return prediction, target
@@ -131,7 +141,6 @@ class Classifier(pl.LightningModule):
         loss = self.objective(outputs, targets)
         self.log('loss_test', loss, prog_bar=False, on_step=False, on_epoch=True, sync_dist=True)
         return loss
-
 
 #-----------------------------------------
 # Initialize: Cooperative Optical Model
@@ -415,6 +424,12 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         self.paths = params['paths']
         self.classifier_image = params['classifier_image']
         self.alpha, self.beta, self.gamma, self.delta = params['alpha'], params['beta'], params['gamma'], params['delta']
+        self.crop_normalize_flag = params['crop_normalize_flag']
+
+        if self.crop_normalize_flag:
+            self.crop = torchvision.transforms.CenterCrop((1080, 1080))
+        else:
+            self.crop = None
 
         self.parse_bench_api_endpoints()
         self.init_bench()
@@ -596,6 +611,14 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         return lens_phase
 
     #-----------------------------------------
+    # Initialize: General utilities
+    #-----------------------------------------
+    def crop_normalize(self, image):
+        image = self.crop(image)
+        image = image / torch.norm(image)
+        return image
+
+    #-----------------------------------------
     # Initialize: Objective function
     #-----------------------------------------
     
@@ -613,11 +636,16 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         # We are going to calculate all of the potential losses and select which to use
         # for the training using MCL parameters
 
+        # Need to resample the sample to the simulation output plane for comparison
+        sample = spatial_resample(self.scaled_plane, sample.abs(), self.dom.layers[1].output_plane).squeeze()
+        if self.crop_normalize_flag:
+            simulation_images = self.crop_normalize(simulation_images)
+            bench_image = self.crop_normalize(bench_image)
+            sample = self.crop_normalize(sample)
+
         #-----------------------------------------
         # Image comparisons
         #-----------------------------------------
-        # Need to resample the sample to the simulation output plane for comparison
-        sample = spatial_resample(self.scaled_plane, sample.abs(), self.dom.layers[1].output_plane).squeeze()
         sim_to_ideal = torch.nn.functional.mse_loss(simulation_images, sample)
         sim_to_bench = torch.nn.functional.mse_loss(simulation_images, bench_image)
 
@@ -631,7 +659,6 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         # Classifier loss
         #-----------------------------------------
         classifier_loss = self.classifier.objective(classifier_output, classifier_target)
-
 
         # Total loss - right now a soft constrained MCL
         loss = self.alpha * sim_to_ideal + self.beta * sim_to_bench + self.gamma * bench_to_ideal + self.delta * classifier_loss
@@ -672,6 +699,10 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
             sample = sample.unsqueeze(0).unsqueeze(0)
         elif len(sample.shape) == 3:
             sample = sample.unsqueeze(1)
+
+        if self.crop_normalize_flag:
+            sample = self.crop_normalize(sample)
+
         batch = (sample, target)
         prediction, target = self.classifier.shared_step(batch)
         return prediction, target
@@ -761,7 +792,6 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         self.log('classifier_loss_val', classifier_loss, on_step=False, on_epoch=True, sync_dist=True)
         return loss
 
-
 #-----------------------------------------
 # Initialize: Sim2Real Optical Model
 #-----------------------------------------
@@ -771,18 +801,28 @@ class Sim2Real(pl.LightningModule):
         self.params = params
         self.paths = params['paths']
         self.dom = DOM(params)
-        self.crop = torchvision.transforms.CenterCrop((1080, 1080))
+        self.crop_normalize_flag = params['crop_normalize_flag']
+       
+        if self.crop_normalize_flag:
+            self.crop = torchvision.transforms.CenterCrop((1080, 1080))
+        else:
+            self.crop = None
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.params['learning_rate'])
 
+    def crop_normalize(self, image):
+        image = self.crop(image)
+        image = image / torch.norm(image)
+        return image
+
     def objective(self, sim_wavefront, batch):
         sim_image = sim_wavefront.abs()**2
         bench_image = batch[1]
-        sim_image = self.crop(sim_image)
-        bench_image = self.crop(bench_image)
-        sim_image = sim_image / torch.norm(sim_image)
-        bench_image = bench_image / torch.norm(bench_image)
+
+        if self.crop_normalize_flag:
+            sim_image = self.crop_normalize(sim_image)
+            bench_image = self.crop_normalize(bench_image)
 
         loss = torch.nn.functional.mse_loss(sim_image.squeeze(), bench_image.squeeze())
         #loss = psnr(sim_image.squeeze(), bench_image.squeeze())
