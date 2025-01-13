@@ -17,6 +17,7 @@ gpu_config: [True, [0]]
 valid_rate: 1
 classifier_image: 'bench' # bench, sim, ideal
 learning_rate: 1.e-4
+### DO NOT SET ###
 crop_normalize_flag: 0
 
 alpha: 1.0

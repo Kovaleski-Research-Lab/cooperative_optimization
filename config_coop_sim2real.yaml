@@ -51,6 +51,7 @@ classifier:
   freeze_linear: True
   load_checkpoint: True
   checkpoint_path: 'results/classifier_baseline_bench_bench_image/version_2/checkpoints/last.ckpt'
+  ### DO NOT SET ###
   crop_normalize_flag: 0
 
 #--------------------------------

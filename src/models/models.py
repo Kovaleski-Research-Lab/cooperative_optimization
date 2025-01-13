@@ -49,6 +49,8 @@ class Classifier(pl.LightningModule):
         self.crop_normalize_flag = self.params['crop_normalize_flag']
         if self.crop_normalize_flag:
             self.crop = torchvision.transforms.CenterCrop((1080, 1080))
+        else:
+            self.crop = None
 
         self.select_model()
 
