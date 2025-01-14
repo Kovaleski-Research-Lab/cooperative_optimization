@@ -429,6 +429,7 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         self.crop_normalize_flag = params['crop_normalize_flag']
 
         if self.crop_normalize_flag:
+            logger.warning("USING CROPPING AND NORMALIZATION")
             self.crop = torchvision.transforms.CenterCrop((1080, 1080))
         else:
             self.crop = None
