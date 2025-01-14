@@ -172,6 +172,8 @@ def run_model(model, data_files, save=False, path_save=None):
         # Forward pass
         with torch.no_grad():
             sim_output = model.forward(sample).detach().abs().cpu()**2
+            if model.crop_normalize_flag:
+                sim_output = model.crop_normalize(sim_output)
 
         if save:
             split = file.split('/')[-1]
