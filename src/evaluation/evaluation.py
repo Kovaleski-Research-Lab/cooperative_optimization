@@ -24,6 +24,8 @@ from torchmetrics.functional.image import structural_similarity_index_measure as
 from joblib import Parallel, delayed
 
 sys.path.append('/home/mblgh6/Documents/cooperative_optimization/src')
+sys.path.append('/develop/code/cooperative_optimization/src')
+sys.path.append('../')
 from datamodule.datamodule import select_data
 from models.models import Classifier
 
