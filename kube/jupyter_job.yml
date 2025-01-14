@@ -15,6 +15,10 @@ spec:
                   operator: In
                   values:
                   - NVIDIA-GeForce-RTX-3090
+                - key: topology.kubernetes.io/region
+                  operator: In
+                  values:
+                  - us-central
       containers:
       - name: marshall-jupyter-job
         image: kovaleskilab/coop:v1

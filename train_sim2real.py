@@ -120,7 +120,9 @@ if __name__ == "__main__":
     params['paths']['path_root'] = "/develop/"
 
     argparser = argparse.ArgumentParser()
-
+    argparser.add_argument("--crop_normalize", help="Crop and normalize the data")
     args = argparser.parse_args()
+    params['crop_normalize_flag'] = int(args.crop_normalize)
+
     run(params)
 

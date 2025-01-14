@@ -21,7 +21,7 @@ spec:
         imagePullPolicy: Always
         workingDir: /develop/code/cooperative_optimization
         command: ["/bin/bash", "-c"]
-        args: ["git pull && python train_sim2real.py"]
+        args: ["git pull && bash train_sim2real_specified.sh"]
         volumeMounts:
             - name: coop-data
               mountPath: /develop/data
