@@ -688,7 +688,9 @@ if __name__ == "__main__":
                         ]
 
     ## Load the images
-    train_images, valid_images, train_labels, valid_labels = load_images('/home/mblgh6/Documents/cooperative_optimization/data/baseline/')
+    #path_data = '/home/mblgh6/Documents/cooperative_optimization/data/baseline/'
+    path_data = '/develop/data/baseline/'
+    train_images, valid_images, train_labels, valid_labels = load_images(path_data)
 
     for checkpoint_path in checkpoint_paths:
         #checkpoint_path = '/devleop/results/classifier_baseline_bench_resampled_sample/version_1/'
