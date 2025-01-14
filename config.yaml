@@ -148,7 +148,7 @@ camera_exposure_time: 100000 # in microseconds
 #--------------------------------
 #       Datamodule Params
 #--------------------------------
-which: 'MNIST' #MNIST, baseline_bench, sim2real
+which: 'baseline_bench' #MNIST, baseline_bench, sim2real
 train_percent: 0.8
 n_cpus: 16
 resize_row: 720
