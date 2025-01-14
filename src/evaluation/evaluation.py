@@ -437,9 +437,6 @@ def eval_classifier(classifier, images):
             ideal_image = torch.from_numpy(ideal_image).unsqueeze(0).unsqueeze(0)
             # Need to manually check if we are using the crop/normalize.
             if classifier.crop_normalize_flag:
-                print("#################")
-                print("CROP NORMALIZE")
-                print("#################")
                 bench_image = classifier.crop_normalize(bench_image)
                 sim_image = classifier.crop_normalize(sim_image)
                 ideal_image = classifier.crop_normalize(ideal_image)
@@ -684,10 +681,10 @@ if __name__ == "__main__":
                         '/develop/results/classifier_baseline_bench_sim_output/version_5/',
                         '/develop/results/classifier_baseline_bench_bench_image/version_0/',
                         '/develop/results/classifier_baseline_bench_bench_image/version_1/',
-                        '/develop/results/classifier_baseline_bench_bench_image/version_2/'
+                        '/develop/results/classifier_baseline_bench_bench_image/version_2/',
                         '/develop/results/classifier_baseline_bench_bench_image/version_3/',
                         '/develop/results/classifier_baseline_bench_bench_image/version_4/',
-                        '/develop/results/classifier_baseline_bench_bench_image/version_5/'
+                        '/develop/results/classifier_baseline_bench_bench_image/version_5/',
                         ]
 
     ## Load the images
