@@ -125,13 +125,17 @@ if __name__ == "__main__":
     argparser.add_argument("--which_data", type=str, default='resampled_sample', help="Which element of the data to use")
     argparser.add_argument("--transfer_learn", help="Transfer learning")
     argparser.add_argument("--freeze_backbone", help="Freeze the backbone")
+    argparser.add_argument("--crop_normalize", help="Crop and normalize the data")
     args = argparser.parse_args()
     params['which_data'] = args.which_data
     params['classifier']['transfer_learn'] = int(args.transfer_learn)
     params['classifier']['freeze_backbone'] = int(args.freeze_backbone)
+    params['classifier']['crop_normalize'] = int(args.crop_normalize)
+
     print("Running with the following parameters:")
     print(f"which_data: {params['which_data']}")
     print(f"transfer_learn: {params['classifier']['transfer_learn']}")
     print(f"freeze_backbone: {params['classifier']['freeze_backbone']}")
+    print(f"crop_normalize: {params['classifier']['crop_normalize_flag']}")
     run(params)
 
