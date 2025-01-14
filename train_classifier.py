@@ -130,7 +130,7 @@ if __name__ == "__main__":
     params['which_data'] = args.which_data
     params['classifier']['transfer_learn'] = int(args.transfer_learn)
     params['classifier']['freeze_backbone'] = int(args.freeze_backbone)
-    params['classifier']['crop_normalize'] = int(args.crop_normalize)
+    params['classifier']['crop_normalize_flag'] = int(args.crop_normalize)
 
     print("Running with the following parameters:")
     print(f"which_data: {params['which_data']}")
