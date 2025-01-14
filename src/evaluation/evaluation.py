@@ -427,11 +427,20 @@ def eval_classifier(classifier, images):
     with torch.no_grad():
         for bench_image, sim_image, ideal_image, target in tqdm(images, desc='Evaluating classifier'):
             target = torch.from_numpy(target)
+
+            # We don't run the classifier shared step here, because we want
+            # access to the features and the predictions.
             bench_image = torch.from_numpy(bench_image).unsqueeze(0).unsqueeze(0)
-            bench_image = torch.cat([bench_image, bench_image, bench_image], dim=1).double().cuda()
             sim_image = torch.from_numpy(sim_image).unsqueeze(0).unsqueeze(0)
-            sim_image = torch.cat([sim_image, sim_image, sim_image], dim=1).double().cuda()
             ideal_image = torch.from_numpy(ideal_image).unsqueeze(0).unsqueeze(0)
+            # Need to manually check if we are using the crop/normalize.
+            if classifier.crop_normalize_flag:
+                bench_image = classifier.crop_and_normalize(bench_image)
+                sim_image = classifier.crop_and_normalize(sim_image)
+                ideal_image = classifier.crop_and_normalize(ideal_image)
+
+            bench_image = torch.cat([bench_image, bench_image, bench_image], dim=1).double().cuda()
+            sim_image = torch.cat([sim_image, sim_image, sim_image], dim=1).double().cuda()
             ideal_image = torch.cat([ideal_image, ideal_image, ideal_image], dim=1).double().cuda()
 
             feature_vector_bench = classifier.feature_extractor(bench_image)
@@ -655,15 +664,26 @@ def plot_feature_space(train_feature_vectors, valid_feature_vectors, train_predi
 
 if __name__ == "__main__":
     #checkpoint_paths = ['/home/mblgh6/Documents/cooperative_optimization/results/classifier_baseline_bench_bench_image/version_4/',]
-    checkpoint_paths = ['/develop/results/classifier_baseline_bench_resampled_sample/version_3/',
+    checkpoint_paths = [
+                        '/develop/results/classifier_baseline_bench_resampled_sample/version_0/',
+                        '/develop/results/classifier_baseline_bench_resampled_sample/version_1/',
+                        '/develop/results/classifier_baseline_bench_resampled_sample/version_2/',
+                        '/develop/results/classifier_baseline_bench_resampled_sample/version_3/',
                         '/develop/results/classifier_baseline_bench_resampled_sample/version_4/',
                         '/develop/results/classifier_baseline_bench_resampled_sample/version_5/',
+                        '/develop/results/classifier_baseline_bench_sim_output/version_0/',
+                        '/develop/results/classifier_baseline_bench_sim_output/version_1/',
+                        '/develop/results/classifier_baseline_bench_sim_output/version_2/',
                         '/develop/results/classifier_baseline_bench_sim_output/version_3/',
                         '/develop/results/classifier_baseline_bench_sim_output/version_4/',
                         '/develop/results/classifier_baseline_bench_sim_output/version_5/',
+                        '/develop/results/classifier_baseline_bench_bench_image/version_0/',
+                        '/develop/results/classifier_baseline_bench_bench_image/version_1/',
+                        '/develop/results/classifier_baseline_bench_bench_image/version_2/'
                         '/develop/results/classifier_baseline_bench_bench_image/version_3/',
                         '/develop/results/classifier_baseline_bench_bench_image/version_4/',
-                        '/develop/results/classifier_baseline_bench_bench_image/version_5/']
+                        '/develop/results/classifier_baseline_bench_bench_image/version_5/'
+                        ]
 
     ## Load the images
     train_images, valid_images, train_labels, valid_labels = load_images('/home/mblgh6/Documents/cooperative_optimization/data/baseline/')
