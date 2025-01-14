@@ -437,6 +437,9 @@ def eval_classifier(classifier, images):
             ideal_image = torch.from_numpy(ideal_image).unsqueeze(0).unsqueeze(0)
             # Need to manually check if we are using the crop/normalize.
             if classifier.crop_normalize_flag:
+                print("#################")
+                print("CROP NORMALIZE")
+                print("#################")
                 bench_image = classifier.crop_normalize(bench_image)
                 sim_image = classifier.crop_normalize(sim_image)
                 ideal_image = classifier.crop_normalize(ideal_image)
