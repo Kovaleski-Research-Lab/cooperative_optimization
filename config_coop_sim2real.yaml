@@ -18,7 +18,7 @@ gpu_config: [True, [0]]
 valid_rate: 1
 classifier_image: 'bench' # bench, sim, ideal
 learning_rate: 1.e-6
-crop_normalize_flag: 0
+crop_normalize_flag: 1
 
 alpha: 0.0
 beta: 0.0
@@ -50,7 +50,7 @@ classifier:
   freeze_backbone: True
   freeze_linear: True
   load_checkpoint: True
-  checkpoint_path: 'results/classifier_baseline_bench_bench_image/version_2/checkpoints/last.ckpt'
+  checkpoint_path: 'results/classifier_baseline_bench_bench_image/version_1/checkpoints/last.ckpt'
   ### DO NOT SET ###
   crop_normalize_flag: 0
 
@@ -59,7 +59,7 @@ classifier:
 #--------------------------------
 sim2real:
   load_checkpoint: True
-  checkpoint_path: 'results/sim2real/version_1/checkpoints/last.ckpt'
+  checkpoint_path: 'results/sim2real/version_0/checkpoints/last.ckpt'
   freeze_calibration_layer: True
 
 #--------------------------------
@@ -123,7 +123,7 @@ modulators:
     pinhole_size: 0.0
     phase_init : 'lens_phase'
     phase_value : 0.0
-    focal_length: 257.175
+    focal_length: 275.98
     wavelength: *wavelength
 
 propagator: &idprop

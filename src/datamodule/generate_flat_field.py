@@ -26,12 +26,11 @@ if __name__ == "__main__":
 
     slm_sample = torch.zeros((1,1,1080, 1920))
     # Mask the central 1080,1080 region
-    y_center = 1080//2
-    x_center = 1920//2
-    slm_sample[:, :, y_center-540:y_center+540, x_center-540:x_center+540] = 255
-
-
+    #y_center = 1080//2
+    #x_center = 1920//2
+    #slm_sample[:, :, y_center-540:y_center+540, x_center-540:x_center+540] = 255
 
     bench_image, lens_phase = model.bench_forward(slm_sample)
     bench_image = bench_image.squeeze().cpu()
+    from IPython import embed; embed()
     torch.save(bench_image, os.path.join(path_data_baseline, 'flat_field.pt'))

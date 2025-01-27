@@ -18,8 +18,6 @@ from models.models import CooperativeOpticalModelRemote
 from datamodule import datamodule
 from pytorch_lightning import seed_everything
 
-
-
 if __name__ == "__main__":
 
     config = yaml.load(open('../../config_coop.yaml', 'r'), Loader=yaml.FullLoader)
@@ -40,11 +38,8 @@ if __name__ == "__main__":
 
     valid_images = []
 
-    # Initialize the datamodule
-    dm = datamodule.select_data(config)
-    dm.setup()
-    train_loader = dm.train_dataloader()
-    valid_loader = dm.val_dataloader()
+    # Initialize the data
+    #TODO
 
     # For each focal length
     for i,focal_length in enumerate(tqdm(focal_length_sweep, desc='Focal Length Sweep')):
@@ -81,8 +76,6 @@ if __name__ == "__main__":
                     break
 
         # Compute the train f1 score
-        #train_f1 = f1_score(train_targets, train_preds, average='macro')
-        #train_f1_scores.append(train_f1)
         torch.save(train_preds, f'train_preds_{i}.pt')
         torch.save(train_targets, f'train_targets_{i}.pt')
 
@@ -115,11 +108,11 @@ if __name__ == "__main__":
                     break
         
         # Compute the valid f1 score
-        #valid_f1 = f1_score(valid_targets, valid_preds, average='macro')
-        #valid_f1_scores.append(valid_f1)
         torch.save(valid_preds, f'valid_preds_{i}.pt')
         torch.save(valid_targets, f'valid_targets_{i}.pt')
 
+
+    # Cleanup
     model.upload_benign_image(which=0)
     model.upload_benign_image(which=1)
 

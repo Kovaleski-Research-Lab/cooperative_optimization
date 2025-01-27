@@ -116,30 +116,31 @@ class Classifier(pl.LightningModule):
 
     def forward(self, x):
         features = self.feature_extractor(x).flatten(1)
-        return self.classifier(features)
+        predictions = self.classifier(features)
+        return features, predictions
 
     def shared_step(self, batch):
         sample, target = batch
         if self.crop_normalize_flag:
             sample = self.crop_normalize(sample)
         sample = torch.cat([sample, sample, sample], dim=1)
-        prediction = self.forward(sample)
-        return prediction, target
+        features, prediction = self.forward(sample)
+        return features, prediction, target
 
     def training_step(self, batch, batch_idx):
-        outputs, targets = self.shared_step(batch)
+        features, outputs, targets = self.shared_step(batch)
         loss = self.objective(outputs, targets)
         self.log('loss_train', loss, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
-        outputs, targets = self.shared_step(batch)
+        features, outputs, targets = self.shared_step(batch)
         loss = self.objective(outputs, targets)
         self.log('loss_val', loss, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
         return loss
 
     def test_step(self, batch, batch_idx):
-        outputs, targets = self.shared_step(batch)
+        features, outputs, targets = self.shared_step(batch)
         loss = self.objective(outputs, targets)
         self.log('loss_test', loss, prog_bar=False, on_step=False, on_epoch=True, sync_dist=True)
         return loss
@@ -442,7 +443,7 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
 
         if self.params['classifier']['load_checkpoint']:
             logger.info("Loading classifier from checkpoint")
-            self.classifier = Classifier.load_from_checkpoint(os.path.join(self.paths['path_root'], self.params['classifier']['checkpoint_path']), strict=False).double()
+            self.classifier = Classifier.load_from_checkpoint(os.path.join(self.paths['path_root'], self.params['classifier']['checkpoint_path']), strict=True).double()
             if self.params['classifier']['freeze_backbone']:
                 logger.info("Freezing backbone")
                 for p in self.classifier.feature_extractor.parameters():
@@ -455,6 +456,9 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         else:
             logger.info("Initializing classifier")
             self.classifier = Classifier(params).double()
+
+        # Need to unset the classifier crop_normalize_flag so we don't do it twice.
+        self.classifier.crop_normalize_flag = 0
 
         self.register_buffer('background_image', self.get_background_image())
         self.num_saturated_pixels = []
@@ -548,7 +552,7 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         lens_phase = self.get_lens_from_dom()
         self.upload_benign_image(which=0)
         self.send_to_slm(lens_phase, which=1)
-        time.sleep(1)
+        time.sleep(0.5)
         return self.get_bench_image()
 
     def get_bench_image(self):
@@ -633,17 +637,14 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         classifier_output = outputs['classifier_output']
         classifier_target = outputs['classifier_target']
 
-        # Parse the batch
-        sample, slm_sample, target = batch
-
         # We are going to calculate all of the potential losses and select which to use
         # for the training using MCL parameters
+
+        sample, _, _ = batch
 
         # Need to resample the sample to the simulation output plane for comparison
         sample = spatial_resample(self.scaled_plane, sample.abs(), self.dom.layers[1].output_plane).squeeze()
         if self.crop_normalize_flag:
-            simulation_images = self.crop_normalize(simulation_images)
-            bench_image = self.crop_normalize(bench_image)
             sample = self.crop_normalize(sample)
 
         #-----------------------------------------
@@ -703,12 +704,9 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         elif len(sample.shape) == 3:
             sample = sample.unsqueeze(1)
 
-        if self.crop_normalize_flag:
-            sample = self.crop_normalize(sample)
-
         batch = (sample, target)
-        prediction, target = self.classifier.shared_step(batch)
-        return prediction, target
+        features, prediction, target = self.classifier.shared_step(batch)
+        return features, prediction, target
 
     def forward(self, samples, slm_samples, classifier_targets):
         # Run the simulation forward
@@ -716,6 +714,11 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
 
         # Run the benchtop forward
         bench_image, phases = self.bench_forward(slm_samples)
+
+        if self.crop_normalize_flag:
+            simulation_outputs['images'] = self.crop_normalize(simulation_outputs['images'])
+            bench_image = self.crop_normalize(bench_image)
+            samples = self.crop_normalize(samples)
 
         # Run the classifier forward
         if self.classifier_image == 'bench':
@@ -728,11 +731,13 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         else:
             raise ValueError(f"Classifier image {self.classifier_image} not supported")
 
-        classifier_output, classifier_target = self.classifier_forward(classifier_image, classifier_targets)
+        classifier_features, classifier_output, classifier_target = self.classifier_forward(classifier_image, classifier_targets)
 
         return {'simulation_outputs': simulation_outputs,
                 'bench_image': bench_image,
                 'phases': phases,
+                'samples': samples,
+                'classifier_features': classifier_features, 
                 'classifier_output': classifier_output,
                 'classifier_target': classifier_target}
 
@@ -757,19 +762,7 @@ class CooperativeOpticalModelRemote(pl.LightningModule):
         # Run the forward pass
         outputs = self(samples, slm_samples, classifier_targets)
 
-        # Parse the outputs
-        simulation_outputs = outputs['simulation_outputs']
-        bench_image = outputs['bench_image']
-        phases = outputs['phases']
-        classifier_output = outputs['classifier_output']
-        classifier_target = outputs['classifier_target']
-
-        return {'simulation_outputs': simulation_outputs,
-                'bench_image': bench_image,
-                'phases': phases,
-                'classifier_output': classifier_output,
-                'classifier_target': classifier_target,
-                }
+        return outputs
 
     def training_step(self, batch, batch_idx):
         outputs = self.shared_step(batch)
@@ -819,13 +812,7 @@ class Sim2Real(pl.LightningModule):
         image = image / torch.norm(image)
         return image
 
-    def objective(self, sim_wavefront, batch):
-        sim_image = sim_wavefront.abs()**2
-        bench_image = batch[1]
-
-        if self.crop_normalize_flag:
-            sim_image = self.crop_normalize(sim_image)
-            bench_image = self.crop_normalize(bench_image)
+    def objective(self, sim_image, bench_image):
 
         loss = torch.nn.functional.mse_loss(sim_image.squeeze(), bench_image.squeeze())
         #loss = psnr(sim_image.squeeze(), bench_image.squeeze())
@@ -841,16 +828,34 @@ class Sim2Real(pl.LightningModule):
         # Make sure in [1,1,H,W]
         sample = sample.view(1, 1, sample.shape[-2], sample.shape[-1])
         bench_image = bench_image.view(1, 1, bench_image.shape[-2], bench_image.shape[-1])
-
         output = self.forward(sample)
-        loss = self.objective(output, batch)
+
+        sim_image = output.abs()**2
+
+        if self.crop_normalize_flag:
+            sim_image = self.crop_normalize(sim_image)
+            bench_image = self.crop_normalize(bench_image)
+
+        loss = self.objective(sim_image, bench_image)
+
         self.log('loss_train', loss, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         sample, bench_image = batch
+        # Make sure in [1,1,H,W]
+        sample = sample.view(1, 1, sample.shape[-2], sample.shape[-1])
+        bench_image = bench_image.view(1, 1, bench_image.shape[-2], bench_image.shape[-1])
         outputs = self.forward(sample)
-        loss = self.objective(outputs, batch)
+
+        sim_image = outputs.abs()**2
+
+        if self.crop_normalize_flag:
+            sim_image = self.crop_normalize(sim_image)
+            bench_image = self.crop_normalize(bench_image)
+
+        loss = self.objective(sim_image, bench_image)
+
         self.log('loss_val', loss, prog_bar=True, on_step=False, on_epoch=True, sync_dist=True)
         return loss
         
@@ -864,6 +869,7 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
         self.paths = params['paths']
         self.classifier_image = params['classifier_image']
         self.alpha, self.beta, self.gamma, self.delta = params['alpha'], params['beta'], params['gamma'], params['delta']
+        self.crop_normalize_flag = self.params['crop_normalize_flag']
 
         self.parse_bench_api_endpoints()
         self.init_bench()
@@ -900,6 +906,16 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
         else:
             self.classifier = Classifier(params).double()
 
+        # Turn off both the classifier and the dom crop_normalize_flags
+        self.classifier.crop_normalize_flag = 0
+        self.dom.crop_normalize_flag = 0
+
+        if self.crop_normalize_flag:
+            logger.warning("USING CROPPING AND NORMALIZATION")
+            self.crop = torchvision.transforms.CenterCrop((1080, 1080))
+        else:
+            self.crop = None
+
         self.register_buffer('background_image', self.get_background_image())
         self.num_saturated_pixels = []
     #-----------------------------------------
@@ -907,6 +923,14 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
     #-----------------------------------------
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.params['learning_rate'])
+
+    #-----------------------------------------
+    # Crop normalize    
+    #-----------------------------------------
+    def crop_normalize(self, image):
+        image = self.crop(image)
+        image = image / torch.norm(image)
+        return image
 
     #-----------------------------------------
     # Initialize: SLM utilities
@@ -1051,8 +1075,7 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
     
     def objective(self, outputs, batch):
         # Parse the outputs
-        simulation_wavefront = outputs['simulation_wavefront']
-        simulation_images = simulation_wavefront.abs()**2
+        simulation_images = outputs['simulation_image']
         bench_image = outputs['bench_image']
         classifier_output = outputs['classifier_output']
         classifier_target = outputs['classifier_target']
@@ -1073,6 +1096,9 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
             sample = sample.unsqueeze(0).unsqueeze(0)
         elif len(sample.shape) == 3:
             sample = sample.unsqueeze(0)
+
+        if self.crop_normalize_flag:
+            sample = self.crop_normalize(sample)
 
         sim_to_ideal = torch.nn.functional.mse_loss(simulation_images, sample)
         sim_to_bench = torch.nn.functional.mse_loss(simulation_images, bench_image)
@@ -1127,8 +1153,8 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
         elif len(sample.shape) == 3:
             sample = sample.unsqueeze(1)
         batch = (sample, target)
-        prediction, target = self.classifier.shared_step(batch)
-        return prediction, target
+        features, prediction, target = self.classifier.shared_step(batch)
+        return features, prediction, target
 
     def forward(self, samples, slm_samples, classifier_targets):
         # Run the simulation forward
@@ -1154,13 +1180,19 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
         else:
             raise ValueError(f"Classifier image {self.classifier_image} not supported")
 
-        classifier_output, classifier_target = self.classifier_forward(classifier_image, classifier_targets)
+        if self.crop_normalize_flag:
+            simulation_image = self.crop_normalize(simulation_image)
+            bench_image = self.crop_normalize(bench_image)
 
-        return {'simulation_wavefront': simulation_wavefront,
+        classifier_features, classifier_output, classifier_target = self.classifier_forward(classifier_image, classifier_targets)
+
+        return {'simulation_image': simulation_image,
                 'bench_image': bench_image,
                 'phases': phases,
                 'classifier_output': classifier_output,
-                'classifier_target': classifier_target}
+                'classifier_target': classifier_target,
+                'classifier_features': classifier_features}
+    
 
     #-----------------------------------------
     # Initialize: Training utilities
@@ -1189,15 +1221,18 @@ class CooperativeOpticalModelRemoteSim2Real(pl.LightningModule):
         outputs = self(samples, slm_samples, classifier_targets)
 
         # Parse the outputs
-        simulation_wavefront = outputs['simulation_wavefront']
+        simulation_image = outputs['simulation_image']
         bench_image = outputs['bench_image']
         phases = outputs['phases']
         classifier_output = outputs['classifier_output']
         classifier_target = outputs['classifier_target']
+        classifier_features = outputs['classifier_features']
 
-        return {'simulation_wavefront': simulation_wavefront,
+        return {'simulation_image': simulation_image,
                 'bench_image': bench_image,
                 'phases': phases,
+                'samples': samples,
+                'classifier_features': classifier_features,
                 'classifier_output': classifier_output,
                 'classifier_target': classifier_target,
                 }
