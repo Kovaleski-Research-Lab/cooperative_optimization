@@ -8,7 +8,7 @@ This module provides REST API endpoints to:
 - Reset the entire bench (clear all devices)
 - Enforce IP whitelisting and log incoming requests
 
-Author: [Your Name]
+Author: Marshall B. Lindsay
 """
 
 from fastapi import FastAPI, File, UploadFile, Request, status, Form, HTTPException
